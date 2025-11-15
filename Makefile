@@ -1,6 +1,6 @@
 
 
-XAARGS=-R -w -XMASM -XCA65
+XAARGS=-w -XMASM -XCA65
 
 SUPPORT=ioromldr 
 
@@ -13,7 +13,7 @@ ioext-core.bin: ioext-core.a65
 	xa $(XAARGS) -P $@.lst -DPET -o $@ $<
 
 ioromldr: ioromldr.a65 ioromcomp.a65 ioext-core.a65
-	xa $(XAARGS) -w -P $@.lst -DPET -o $@ $<
+	xa $(XAARGS) -P $@.lst -DPET -o $@ $<
 
 clean:
 	rm -f *.bin *.lst

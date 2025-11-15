@@ -1,15 +1,12 @@
 
 /*
- * this file installs the dosrom driver in bank 7 and patches the BASIC 4 ROM
- * to include the ROM usb companion functions.
- *
- * Therefore, at the end of this file, a page of companion code is expected that is
- * installed into $dfxx in BASIC ROM.
- * After that, up to 16k of USB driver code and data are expected, that are copied
- * to $1000 in bank 7 (where the USB driver code resides)
+ * this file installs the iorom driver in bank 7 and patches the BASIC 4 ROM
+ * to include the ROM companion functions.
  */
 
-SDC_COMPANION	=$fe30
+IOCOMPADDR	=$d7a4
+IOCOMPBANK	=14
+BANK		=$e802
 
 	.word $0401
 	*=$0401
@@ -26,32 +23,57 @@ eol	.word 0			; BASIC link pointer, 0 means end of code
 	; native mode
 	clc
 	xce
+	; make ROM writeable
+	lda #0
+	sta $e801
+
+	; copy end of monitor to monitor entry
+	.(
+	ldy #0
+l1	lda $d66b,y
+	sta $d4ac,y
+	iny
+	cpy #7
+	bcc l1
+	.)
+
+	; clear out monitor area
+	; $d4b3 - d7a3
+	.(
+	lda #$ea	; NOP opcode
+	ldy #0
+l1	sta $d4b3,y	; monitor code
+	sta $d5b3,y
+	sta $d7a3-$0100,y
+	iny
+	bne l1
+	.)
+
 	; 16bit index registers
 	rep #%00010000
 	.xl
-	
-;	ldx #end - dosrom
-;pc2	lda dosrom-1,x
-;	sta $074000-1,x
-;	dex
-;	bne pc2
 
-;	ldx #dosrom - MOVE
-;pc3	lda MOVE-1,x
-;	sta $9000-1,x
-;	dex
-;	bne pc3
-	
+	; copy over companion and
+	; install it
+	.(
+	ldx #dosrom - MOVE
+l1	lda MOVE-1,x
+	sta IOCOMPADDR-1,x
+	dex
+	bne l1
+	.)
+
 	; 8bit index registers
 	sep #%00010000
 	.xs
 
-	; install the patch (in dosromcomp.a65)
-;	jsr sdcard_install
-
 	; emulation mode
 	sec
 	xce
+
+	; restore memory protection
+	lda #$d0
+	sta $e801
 
 	cli
 
@@ -68,15 +90,15 @@ text
 STATUS	=$96
 
 MOVE:
-	*=$9000
+	*=IOCOMPADDR
 
 #include "ioromcomp.a65"
 
-	*=*-$9000+MOVE
-
-dosrom
-	*=$4000
+	*=*-IOCOMPADDR+MOVE
+dosrom:
+	.include "ioext-core.i65"
+	*=IOEXT_BASE
 #define	PET
 	.include "ioext-core.a65"
-	*=*-$4000+dosrom
+	*=*-IOEXT_BASE+dosrom
 end
