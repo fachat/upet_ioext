@@ -3,14 +3,57 @@
 
 #include "ioext-core.i65"
 
-; address of the IO ROM in DOSBANK
-IOROM	=$4000
-
 	; -------------------------------------------------------
 	; the following code is copied into the ROM and called
 	; from the patches into the kernal I/O code
 
-CLRCH
+;--------------------------------------------------
+; this is injected at $f2a6
+; the original only just sends UNTALK/UNLISTEN for IEEE
+;
+; F2A6	iF2A6	LDA $B0		; Default Output (CMD) Device (3)
+; F2A8		CMP #$04
+; F2AA		BCC $F2AF
+; F2AC		JSR $F1B9	; untlk	Send UNLISTEN
+; F2AF	iF2AF	LDA $AF		; Default Input Device (0)
+; F2B1		CMP #$04
+; F2B3		BCC $F2B8
+; F2B5		JSR $F1AE	; untlk	Send UNTALK
+
+&CLRCH 	.(
+	phx
+	lda $b0
+	jsr is_ioext
+	bcs out_ioext
+	cmp #$04
+	bcc chkinput
+	jsr $f1b9		; unlisten
+chkinput
+	lda $af
+	jsr is_ioext
+	bcs in_ioext
+	plx
+	jmp $f2b3
+clrch_exit
+	plx
+	jmp $f2b8
+out_ioext
+	ldx #IOCOMPBANK
+	stx BANK
+	jsr IO_CLRCH_OUT
+	ldx #0
+	stx BANK
+	beq chkinput
+in_ioext
+	ldx #IOCOMPBANK
+	stx BANK
+	jsr IO_CLRCH_IN
+	ldx #0
+	stx BANK
+	beq clrch_exit
+	.)
+
+
 
 ;--------------------------------------------------
 ; this is injected at $f818 where keyboard is already branched out
@@ -22,7 +65,7 @@ CLRCH
 ; F81A		BEQ $F828
 ; F81C		BCS $F82D
 ;
-CKOUT	.(
+&CKOUT	.(
 	jsr is_ioext
 	bcs chkout_ioext
 	cmp #3
@@ -48,7 +91,7 @@ chkout_ioext
 ; F7CC		BEQ $F7DA
 ; F7CE		BCS $F7DF
 ;
-CHKIN	.(
+&CHKIN	.(
 	jsr is_ioext
 	bcs chkin_ioext
 	cmp #3
@@ -65,9 +108,74 @@ chkin_ioext
 	jmp $f7dc
 	.)
 
-CHROUT
+;--------------------------------------------------
+; Injected at $f266
+;
+; F266	iF266	PHA
+; F267		LDA $B0		; Default Output (CMD) Device (3)
+; F269		CMP #$03
+; F26B		BNE $F271
+; F26D		PLA
+; F26E		JMP $E202	; -	Output to Screen
+; F271	iF271	BMI $F277
+; F273		PLA
+; F274		JMP $F19E
+; F277	iF277	PLA
 
-CHRIN
+&CHROUT	.(
+	pha
+	lda $b0
+	jsr is_ioext
+	bcs out_ioext
+	jmp $f269
+out_ioext
+	phx
+	phy
+	tay		; translated device number
+	tsx
+	lda $0103,x	; AC output value
+	ldx #IOCOMPBANK
+	stx BANK
+	jsr IO_OUT
+	ldx #0
+	stx BANK
+	tsx
+	lda $0103,x	; AC output value
+	ply
+	plx
+	rts
+	.)
+
+;--------------------------------------------------
+; Injected at $f215
+;
+; F215	iF215	LDA $AF		; Default Input Device (0)
+; F217		BNE $F224
+; F219		LDA $C6		; Cursor Column on Current Line
+; F21B		STA $A4
+; F21D		LDA $D8		; Current Cursor Physical Line Number
+; F21F		STA $A3		; Cursor Y-X Pos. at Start of INPUT
+; F221		JMP $E116	; Input From Screen or Keyboard
+; F224	iF224	CMP #$03
+; F226		BNE $F231	; -	Get From Tape / IEEE
+&CHRIN	.(
+	lda $af
+	jsr is_ioext
+	bcs out_ioext
+	cmp #0
+	jmp $f217
+out_ioext
+	phx
+	phy
+	ldx #IOCOMPBANK
+	stx BANK
+	jsr IO_IN
+	ldx #0
+	stx BANK
+	ply
+	plx
+	rts
+	.)
 
 ;--------------------------------------------------
 ; this is injected at F35D
@@ -79,7 +187,7 @@ CHRIN
 ; F35F		BEQ $F35A
 ; F361		BCC $F3D4
 ; F363		LDA #$60
-LOAD	.(
+&LOAD	.(
 	jsr is_ioext
 	bcs load_ioext
 	cmp #3
@@ -100,7 +208,7 @@ load_err
 ; F6EC	iF6EC	CMP #$03
 ; F6EE		BEQ $F6E7
 ; F6F0		BCC $F742
-SAVE	.(
+&SAVE	.(
 	jsr is_ioext
 	bcs save_ioext
 	cmp #3
@@ -113,7 +221,7 @@ save_err
 
 
 ;--------------------------------------------------
-; close is injected at f4f2, where keyboard and
+; close is injected at f2f4, where keyboard and
 ; screen have already branched out
 ;
 ; F2EC	LDA $D4
@@ -123,7 +231,7 @@ save_err
 ; F2F4	BCS $F315
 ; F2F6	LDA $D3		; tape
 ; F2F8	AND #$0f
-CLOSE	.(
+&CLOSE	.(
 	jsr is_ioext
 	bcs close_ioext
 	cmp #3
@@ -151,14 +259,14 @@ close_ioext
 ; F591	BEQ $F5E4	; screen
 ; F593	BCC $F598	; 1,2 = TAPE
 ; F595	JMP $F4A5	; IEEE
-OPEN	.(
+&OPEN	.(
 	jsr is_ioext
 	bcs open_ioext
 	cmp #3
 	bcc opentape
-	jmp $f598
+	jmp $f4a5
 opentape
-	jmp $f4a4
+	jmp $f598
 open_ioext
 	ldx #IOCOMPBANK
 	stx BANK

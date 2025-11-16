@@ -4,7 +4,7 @@
  * to include the ROM companion functions.
  */
 
-IOCOMPADDR	=$d7a4
+IOCOMPADDR	=$d4c0
 IOCOMPBANK	=14
 BANK		=$e802
 
@@ -63,9 +63,48 @@ l1	lda MOVE-1,x
 	bne l1
 	.)
 
+	lda #$4c
+	ldx #CLRCH
+
+	sta $f2a6
+	stx $f2a7
+
+	ldx #CKOUT
+	sta $f818
+	stx $f819
+
+	ldx #CHKIN
+	sta $f7ca
+	stx $f7cb
+
+	ldx #CHROUT
+	sta $f266
+	stx $f267
+
+	ldx #CHRIN
+	sta $f215
+	stx $f216
+
+	ldx #LOAD
+	sta $f35d
+	stx $f35e
+
+	ldx #SAVE
+	sta $f6ec
+	stx $f6ed
+
+	ldx #CLOSE
+	sta $f2f4
+	stx $f2f5
+
+	ldx #OPEN
+	sta $f593
+	stx $f594
+
 	; 8bit index registers
 	sep #%00010000
 	.xs
+
 
 	; emulation mode
 	sec
