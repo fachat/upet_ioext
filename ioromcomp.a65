@@ -1,8 +1,6 @@
 
 .(
 
-#include "ioext-core.i65"
-
 	; -------------------------------------------------------
 	; the following code is copied into the ROM and called
 	; from the patches into the kernal I/O code

@@ -4,9 +4,11 @@
  * to include the ROM companion functions.
  */
 
+IOEXT_BASE	=$7000
 IOCOMPADDR	=$d4c0
 IOCOMPBANK	=14
 BANK		=$e802
+
 
 	.word $0401
 	*=$0401
@@ -52,6 +54,15 @@ l1	sta $d4b3,y	; monitor code
 	; 16bit index registers
 	rep #%00010000
 	.xl
+
+	; copy over core
+	.(
+	ldx #end-dosrom
+l1	lda dosrom-1,x
+	sta IOEXT_BASE + BANK<<15,x
+	dex
+	bne l1
+	.)
 
 	; copy over companion and
 	; install it
@@ -135,9 +146,9 @@ MOVE:
 
 	*=*-IOCOMPADDR+MOVE
 dosrom:
-	.include "ioext-core.i65"
 	*=IOEXT_BASE
 #define	PET
-	.include "ioext-core.a65"
+#include "ioext-core.a65"
 	*=*-IOEXT_BASE+dosrom
 end
+

@@ -1,15 +1,28 @@
 
 
 	.(
-IOEXT_OPEN	jmp do_open
-IOEXT_CLOSE	jmp do_close
-IOEXT_CHKOUT	jmp do_chkout
-IOEXT_CHKIN	jmp do_chkin
-	.)
+&IO_RESET	jmp do_reset
+&IO_IRQ		jmp do_irq
+&IO_OPEN	jmp do_open
+&IO_CLOSE	jmp do_close
+&IO_CHKOUT	jmp do_chkout
+&IO_CHKIN	jmp do_chkin
+&IO_CLRCH_OUT 	jmp do_clrch_out
+&IO_CLRCH_IN	jmp do_clrch_in
+&IO_OUT		jmp do_out
+&IO_IN		jmp do_in
 
+do_reset
+do_irq
 do_open
 do_close
 do_chkout
 do_chkin
+do_clrch_out
+do_clrch_in
+do_out
+do_in
 	rts
+
+	.)
 
