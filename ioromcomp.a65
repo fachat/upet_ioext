@@ -161,7 +161,9 @@ out_ioext
 	jsr is_ioext
 	bcs out_ioext
 	cmp #0
-	jmp $f217
+	bne notkbd
+	jmp $f219
+notkbd	jmp $f224
 out_ioext
 	phx
 	phy

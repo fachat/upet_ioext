@@ -59,7 +59,7 @@ l1	sta $d4b3,y	; monitor code
 	.(
 	ldx #end-dosrom
 l1	lda dosrom-1,x
-	sta IOEXT_BASE + BANK<<15,x
+	sta IOEXT_BASE + (IOCOMPBANK<<15) -1,x
 	dex
 	bne l1
 	.)
