@@ -277,6 +277,13 @@ open_ioext
 	.)
 
 ;--------------------------------------------------
+
+&NEWIRQ	.(
+&&origaddr	=*+1
+	jmp $ffff
+	.)
+
+;--------------------------------------------------
 ; filter device number for IOEXT devices
 ;
 ; Input:
