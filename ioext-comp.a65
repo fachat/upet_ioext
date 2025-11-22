@@ -268,6 +268,22 @@ close_ioext
 opentape
 	jmp $f598
 open_ioext
+	; copy over filename to IOEXT_BANK
+	; so that only need to give the length in registers
+	; and have no bank stuff in the actual core
+	.(
+	ldy #0
+	ldx #0
+l	cpy FN_LEN
+	beq e
+	lda (FN_PTR),y
+	sta IOEXT_FILENAME+(IOEXT_BANK<<15),x
+	inx
+	iny
+	bne l
+e	lda #0
+	sta IOEXT_FILENAME+(IOEXT_BANK<<15),x
+	.)
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_OPEN
@@ -284,7 +300,17 @@ open_ioext
 	jsr IO_IRQ
 	lda #DEFAULT_BANK
 	sta BANKREG
-&&origaddr	=*+1
+&&origirq	=*+1
+	jmp $ffff
+	.)
+
+&NEWRESET .(
+	lda #IOEXT_BANK
+	sta BANKREG
+	jsr IO_RESET
+	lda #DEFAULT_BANK
+	sta BANKREG
+&&origres	=*+1
 	jmp $ffff
 	.)
 

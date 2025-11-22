@@ -13,7 +13,9 @@
 &IO_IN		jmp do_in
 
 do_reset
+		jmp uart_res
 do_irq
+		jmp uart_irq
 do_open
 do_close
 do_chkout
@@ -23,6 +25,9 @@ do_clrch_in
 do_out
 do_in
 	rts
+
+#include "ioext-stream.i65"
+#include "ioext-ser.a65"
 
 	.)
 

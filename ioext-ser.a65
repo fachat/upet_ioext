@@ -1,5 +1,5 @@
 
-#if 0
+#if 1
 
 /*
  * This is an UART 16550A serial line driver 
@@ -28,53 +28,134 @@ UARTDIFF	=UART2-UART1
 
 
 	; do the reset routine for the two UARTs
-uart_res
+&uart_res
 	jmp devini
 
 	; do the interrupt routine for the two UARTs
-uart_irq 
+&uart_irq 
 	jmp devirq
-	; 
+
+
+
+	;---------------------------------
+	; transmit buffer
+
+	; get a char from send buffer in interrupt
+	; x is 0/UARTDIFF, returns char in A when C=0; C=1 -> no char
+&uart1_rx
+	ldx #0
+	.byt $2c
+&uart2_rx
+	ldx #UARTDIFF
+stream_receive .(
+	lda u1_rxrp,x
+	cmp u1_rxwp,x
+	beq empty
+	tay
+	txa
+	bne u2_get
+	lda u1_rxbuf,y
+	bra ux_end
+u2_get	lda u2_rxbuf,y
+ux_end	iny
+	pha
+	tya
+	sta u1_rxrp,x
+	pla
+	clc
+	rts
+empty	sec
+	rts
+	.)
+
+	; write a char to receive buffer from OS
+	; x is/UARTDIFF, a is byte to send
+	; returns c=0 or c=1 (error)
+stream_put .(
+	pha
+	lda u1_rxwp,x
+	tay
+	clc
+	adc #1
+	cmp u1_rxrp,x
+	beq full
+	pla
+	cpx #0
+	beq u2_put
+	sta u1_rxbuf,y
+	bne ux_end
+u2_put	sta u2_rxbuf,y
+ux_end	iny
+	tya
+	sta u1_rxwp,x
+	sec
+	sbc u1_rxrp,x
 	
-/* 
- * 16550 divisor values for BAUD rates ?, 50, 75, 110, 134.5, 150, 
- * 300, 600, 1200, 1800, 2400, 3600, 4800, 7200, 9600, 19200
- */
-divisor	.word 	-1, 2304 * XTALMULT, 1536 * XTALMULT, 1047 * XTALMULT
-	.word   857 * XTALMULT, 768 * XTALMULT, 384 * XTALMULT
-	.word   192 * XTALMULT, 96 * XTALMULT
-	.word	64 * XTALMULT, 48 * XTALMULT, 32 * XTALMULT
-	.word   24 * XTALMULT, 16 * XTALMULT, 12 * XTALMULT
-	.word   6 * XTALMULT
+	clc
+	rts
+full	pla
+	lda #E_SHWM
+	sec
+	rts
+	.)
 
+	;---------------------------------
+	; transmit buffer
 
-	; -----------------------------------------
-u_first	=*
+	; get a char from send buffer in interrupt
+	; x is 0/UARTDIFF, returns char in A when C=0; C=1 -> no char
+stream_get .(
+	lda u1_txrp,x
+	cmp u1_txwp,x
+	beq empty
+	tay
+	txa
+	bne u2_get
+	lda u1_txbuf,y
+	bra ux_end
+u2_get	lda u2_txbuf,y
+ux_end	pha
+	tya
+	iny
+	sta u1_txrp,x
+	pla
+	clc
+	rts
+empty	sec
+	rts
+	.)
 
-u1_hw	.byt 0			; if bit 7 set, then hw is ready
-u1_st	.byt 0			; if bit 7 set, then rx, bit 6 set then tx
-				; read and write pointer indexes into 
-				; transfer buffers
-u1_txwp	.byt 0			; tx, write from OS
-u1_txrp	.byt 0			; tx, read from int
-u1_rxwp	.byt 0			; rx write from int
-u1_rxrp	.byt 0			; rx, read from OS
-
-				; pad structure so that attributes
-				; can be accessed with UARTDIFF index
-	.dsb u1_hw+UARTDIFF-*, 0	 
-
-u2_hw	.byt 0			; if bit 7 set then hw is ready
-u2_st	.byt 0			; if bit 7 set, then rx, bit 6 set then tx
-				; read and write pointer indexes into 
-				; transfer buffers
-u2_txwp	.byt 0			; tx, write from OS
-u2_txrp	.byt 0			; tx, read from int
-u2_rxwp	.byt 0			; rx write from int
-u2_rxrp	.byt 0			; rx, read from OS
-
-u_last	=*			; end pointer for fill
-u_len	=u_last-u_first
+	; write a char to send buffer from OS
+	; x is/UARTDIFF, a is byte to send
+	; returns c=0 or c=1 (error)
+&uart1_tx
+	ldx #0
+	.byt $2c
+&uart2_tx
+	ldx #UARTDIFF
+stream_send .(
+	pha
+	lda u1_txwp,x
+	tay
+	clc
+	adc #1
+	cmp u1_txrp,x
+	beq full
+	pla
+	cpx #0
+	bne u2_put
+	sta u1_txbuf,y
+	bne ux_end
+u2_put	sta u2_txbuf,y
+ux_end	iny
+	tya
+	sta u1_txwp,x
+	clc
+	rts
+full	pla
+	sec
+	rts
+	.)
 
 	.(
 	.text
@@ -91,6 +172,7 @@ u_len	=u_last-u_first
 	ldx #UARTDIFF
 	jsr res
 	ror u2_hw	; bit 7: 0=ok
+	sec
 	rts
 res
 	lda UARTBASE+UART_MCR,x
@@ -218,8 +300,6 @@ irqe
 	and #$40
 	beq nbyt
 	jsr tx2
-	; check rx/tx status
-	jsr status
 nbyt
 	rts
 
@@ -232,68 +312,43 @@ rx2	.(
 	lda u1_st,x
 	bpl rx2end
 
-	; rx'd byte in YR
-	txa
-	beq rx_u1
-rx_u2	tya
-	ldy u2_rxwp,x
-	sta (u2p),y
-	inc u2_rxwp,x
-	
-&status ldx outstr
-	bit status
-	bpl rx2end
-        lda #SC_STAT
-        jsr STRCMD
-        bcc rx2end
-test
-        cmp #E_NUL
-        bne tstwater
-        jmp rxoff
+	; char is in y
+	; x is 0 or UARTDIFF
+	jsr stream_put
+	bcc rx2end
+
 tstwater  
-	cmp #E_SEMPTY
-        beq wl
-        tax
-        lda status
-        and #1
-        bne wh
-        txa
         cmp #E_SHWM
-        beq wh
-        cmp #E_SFULL
         bne twl
-wh      ldx #0  
-	jmp rtshi
+wh     	jmp rtshi
 twl     cmp #E_SLWM
         bne rx2end
-wl      ldx #0  
-	jmp rtslo
+wl      jmp rtslo
+
+rx2end	rts
 	.)
 
 	;-----------------------------------------------
 
 tx2 	.(
-	bit status
-        bvc txrt		; reading IIR should clear this line
+	lda u1_st,x
+	and #$40
+        beq txrt		; reading IIR should clear this line
 
-	lda UART+UART_MSR
+	lda UARTBASE + UART_MSR,x
 	and #%00110000
 	cmp #%00110000		; cts or dsr inactive
 	bne txrt
 
 	ldy #15			
 txloop
-        ldx instr		; send new data byte
-        jsr GETC
+        jsr stream_get
         bcs test2
-        sta UART+UART_RXTX
+        sta UARTBASE + UART_RXTX,x
 	dey
 	bne txloop		; fill up FIFO
         bcc txrt
-
-test2   cmp #E_EOF
-        bne txrt
-        jmp txoff
+test2
 txrt	rts
 	.)
 
@@ -302,176 +357,134 @@ txrt	rts
 /*****************************************************************/
 
 dtrhi
-	lda UART+UART_MCR
+	lda UARTBASE + UART_MCR,x
 	and #%11111110
-	sta UART+UART_MCR
+	sta UARTBASE + UART_MCR,x
 	lda #0
-	sta UART+UART_IER
+	sta UARTBASE + UART_IER,x
 	rts
 
 dtrlo
-	lda UART+UART_MCR
+	lda UARTBASE + UART_MCR,x
 	ora #%00000001
-	sta UART+UART_MCR
+	sta UARTBASE + UART_MCR,x
 	lda #3
-	sta UART+UART_IER
+	sta UARTBASE + UART_IER,x
 	rts
 
 rtshi
-	lda UART+UART_MCR
+	lda UARTBASE + UART_MCR,x
 	and #%11111101
-	sta UART+UART_MCR
-	lda status,x
+	sta UARTBASE + UART_MCR,x
+	lda u1_st,x
 	ora #%0010000
-	sta status,x
+	sta u1_st,x
 	rts
 
 rtslo
-	lda UART+UART_MCR
+	lda UARTBASE + UART_MCR,x
 	ora #%00000010
-	sta UART+UART_MCR
-	lda status,x
+	sta UARTBASE + UART_MCR,x
+	lda u1_st,x
 	and #%11011111
-	sta status,x
+	sta u1_st,x
 	rts
 
 /*****************************************************************/
 
-others    cmp #DC_GS		; set stream to get data from
-          bne o1
-          lda status,x
-          and #DC_SW_TX
-          bne devonx
-          tya
-          sta instr,x
-          jmp ok
-devonx    jmp devon
-o1        cmp #DC_PS		; set stream to put data to
-          bne o2
-          lda status,x
-          and #DC_SW_RX
-          bne devonx
-          tya
-          sta outstr,x
-okx       jmp ok
-o2        cmp #DC_RX_ON		; switch receiver on
-          bne o3
-	; lda #3
-	; sta brkkey
-	jsr rtslo
+&uart1_on
+	ldx #0
+	.byt $2c
+&uart2_on
+	ldx #UARTDIFF
+ser_on	jsr rtslo
 	jsr dtrlo
-          lda #DC_SW_RX
-          bne o2a
-o3        cmp #DC_TX_ON		; switch sender on
-          bne o4
-	jsr dtrlo
-          lda #DC_SW_TX
-o2a       ora status,x
-          sta status,x
-          bne okx
-o4        cmp #DC_RX_OFF	; switch receiver off, send eof to stream
-          bne o5
-rxoff     ldx dev
-          lda status,x
-          and #DC_SW_RX
-          beq devoffx
-	jsr rtshi
-          lda outstr,x
-          tax
-          lda #SC_EOF
-          jsr STRCMD
-          ldx dev
-          lda status,x
-          and #255-DC_SW_RX
-          sta status,x
-	  jmp checkdtr
+	lda u1_st,x
+	ora #%11000000
+	sta u1_st,x
+	rts
 
-devoffx   jmp  devoff
-
-o5        cmp #DC_TX_OFF	; switch sender off, send nul to stream
-          bne o6
-txoff     ldx dev
-          lda status,x
-          and #DC_SW_TX
-          beq devoffx
-          lda instr,x
-          tax
-          lda #SC_NUL
-          jsr STRCMD
-          ldx dev
-          lda status,x
-          and #255-DC_SW_TX
-          sta status,x
-checkdtr
-	and #DC_SW_TX+DC_SW_RX
-	bne active
+&uart1_off
+	ldx #0
+	.byt $2c
+&uart2_off
+	ldx #UARTDIFF
+ser_off	jsr rtshi
 	jsr dtrhi
-active 	jmp ok
+	lda u1_st,x
+	and #%00111111
+	sta u1_st,x
+	rts
 
-o6        cmp #DC_HS		; set handshake -- currently ignored (TODO)
-          bne o6a
-          lda status,x
-          and #255-1
-          sta status,x
-          tya
-          and #1
-          ora status,x
-          sta status,x
-          jmp ok
-
-o6a       cmp #DC_SPD		; set speed
-          bne o7
-          tya
-          and #%00001111
-	  asl
-          tax
-	  beq ok
-
-	lda UART+UART_LCR
+; y has index in divisor table
+&uart1_speed
+	ldx #0
+	.byt $2c
+&uart2_speed
+	ldx #UARTDIFF
+ser_speed
+	lda UARTBASE + UART_LCR,x
 	ora #$80
-	sta UART+UART_LCR
-  	lda divisor,x
-	sta UART+UART_DLL
-	lda divisor+1,x
-	sta UART+UART_DLH
-	lda UART+UART_LCR
+	sta UARTBASE + UART_LCR,x
+  	lda divisor,y
+	sta UARTBASE + UART_DLL,x
+	lda divisor+1,y
+	sta UARTBASE + UART_DLH,x
+	lda UARTBASE + UART_LCR,x
 	and #$7f
-	sta UART+UART_LCR
+	sta UARTBASE + UART_LCR,x
+	rts
 
-          jmp ok
+	
+/* 
+ * 16550 divisor values for BAUD rates ?, 50, 75, 110, 134.5, 150, 
+ * 300, 600, 1200, 1800, 2400, 3600, 4800, 7200, 9600, 19200
+ */
+divisor	.word 	-1, 2304 * XTALMULT, 1536 * XTALMULT, 1047 * XTALMULT
+	.word   857 * XTALMULT, 768 * XTALMULT, 384 * XTALMULT
+	.word   192 * XTALMULT, 96 * XTALMULT
+	.word	64 * XTALMULT, 48 * XTALMULT, 32 * XTALMULT
+	.word   24 * XTALMULT, 16 * XTALMULT, 12 * XTALMULT
+	.word   6 * XTALMULT
 
-o7        cmp #DC_ST		; get status...
-          beq ok 
-          cmp #DC_EXIT		; disable everything
-          bne o8		; onotimp
-          jsr rxoff
-          jsr txoff
-          ldx dev 
-          lda status,x
-          ora #2
-          sta status,x
-	  bne ok
-o8
-	  cmp #DC_BRKKEY
-	  bne onotimp
-          lda brkkey
-	  sty brkkey
-	  tay
-	  ; jmp ok
 
-ok        lda #E_OK
-          .byt $2c
-devon     lda #E_DON
-          .byt $2c
-devoff    lda #E_DOFF
-          .byt $2c
-onotimp   lda #E_NOTIMP
-          cmp #1
-          rts
+	; -----------------------------------------
+u_first	=*
 
-#undef UART
-#undef XTALMULT
+u1_hw	.byt 0			; if bit 7 set, then hw is ready
+u1_st	.byt 0			; if bit 7 set, then rx, bit 6 set then tx
+u1_hs	.byt 0			; if bit 7 set, then rts/cts handshake
 
-devend2   .)
+				; read and write pointer indexes into 
+				; transfer buffers
+u1_txwp	.byt 0			; tx, write from OS
+u1_txrp	.byt 0			; tx, read from int
+u1_rxwp	.byt 0			; rx write from int
+u1_rxrp	.byt 0			; rx, read from OS
+
+				; pad structure so that attributes
+				; can be accessed with UARTDIFF index
+	.dsb u1_hw+UARTDIFF-*, 0	 
+
+u2_hw	.byt 0			; if bit 7 set then hw is ready
+u2_st	.byt 0			; if bit 7 set, then rx, bit 6 set then tx
+u2_hs	.byt 0			; if bit 7 set, then rts/cts handshake
+
+				; read and write pointer indexes into 
+				; transfer buffers
+u2_txwp	.byt 0			; tx, write from OS
+u2_txrp	.byt 0			; tx, read from int
+u2_rxwp	.byt 0			; rx write from int
+u2_rxrp	.byt 0			; rx, read from OS
+
+u_last	=*			; end pointer for fill
+u_len	=u_last-u_first
+
+u1_rxbuf	.dsb 256
+u1_txbuf	.dsb 256
+u2_rxbuf	.dsb 256
+u2_txbuf	.dsb 256
+
+	.)
 
 #endif

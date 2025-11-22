@@ -1,0 +1,7 @@
+
+
+; receive stream error
+E_SLWM		=<-2	; below low water mark or empty
+E_SHWM		=<-3	; above high water mark or full
+
+

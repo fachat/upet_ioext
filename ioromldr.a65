@@ -9,6 +9,9 @@ IOEXT_COMP	=$d4c0
 IOEXT_BANK	=14
 DEFAULT_BANK	=0
 BANKREG		=$e802
+IOEXT_FILENAME	=$0200
+FN_PTR		=$da
+FN_LEN		=$d1
 
 
 	.word $0401
@@ -30,7 +33,10 @@ eol	.word 0			; BASIC link pointer, 0 means end of code
 	lda #0
 	sta $e801
 
-	; copy end of monitor to monitor entry
+	; -----------------------------
+	; remove monitor to make room 
+
+	; copy monitor exit code to monitor entry
 	.(
 	ldy #0
 l1	lda $d66b,y
@@ -56,6 +62,7 @@ l1	sta $d4b3,y	; monitor code
 	rep #%00010000
 	.xl
 
+	; -----------------------------
 	; copy over core
 	.(
 	ldx #end-dosrom
@@ -65,8 +72,9 @@ l1	lda dosrom-1,x
 	bne l1
 	.)
 
-	; copy over companion and
-	; install it
+	; -----------------------------
+	; copy over companion
+
 	.(
 	ldx #dosrom - MOVE
 l1	lda MOVE-1,x
@@ -74,6 +82,9 @@ l1	lda MOVE-1,x
 	dex
 	bne l1
 	.)
+
+	; -----------------------------
+	; patch it into ROM
 
 	lda #$4c
 	ldx #CLRCH
@@ -113,10 +124,21 @@ l1	lda MOVE-1,x
 	sta $f593
 	stx $f594
 
+	; -----------------------------
+	; init reset code
+
+	ldx #NEWRESET
+	ldy $fd1c
+	stx $fd1c
+	sty origres
+
+	
+	; -----------------------------
 	; 8bit index registers
 	sep #%00010000
 	.xs
 
+	; -----------------------------
 	; install interrupt code
 	.(
         lda #<NEWIRQ
@@ -167,8 +189,11 @@ exit	; x/y has the original interrupt routine address
 	; we're patching into.
 	
         ; save the original addr
-        stx origaddr
-        sty origaddr+1
+        stx origirq
+        sty origirq+1
+
+	; -----------------------------
+	; exit install
 
         plp
 	.)
@@ -176,6 +201,9 @@ exit	; x/y has the original interrupt routine address
 	; emulation mode
 	sec
 	xce
+
+	; init the serial code
+	jsr NEWRESET
 
 	; restore memory protection
 	lda #$d0
