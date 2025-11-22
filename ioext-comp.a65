@@ -36,18 +36,18 @@ clrch_exit
 	plx
 	jmp $f2b8
 out_ioext
-	ldx #IOCOMPBANK
-	stx BANK
+	ldx #IOEXT_BANK
+	stx BANKREG
 	jsr IO_CLRCH_OUT
-	ldx #0
-	stx BANK
+	ldx #DEFAULT_BANK
+	stx BANKREG
 	beq chkinput
 in_ioext
-	ldx #IOCOMPBANK
-	stx BANK
+	ldx #IOEXT_BANK
+	stx BANKREG
 	jsr IO_CLRCH_IN
-	ldx #0
-	stx BANK
+	ldx #DEFAULT_BANK
+	stx BANKREG
 	beq clrch_exit
 	.)
 
@@ -72,11 +72,11 @@ in_ioext
 chkout_screen
 	jmp $f828	
 chkout_ioext
-	ldx #IOCOMPBANK
-	stx BANK
+	ldx #IOEXT_BANK
+	stx BANKREG
 	jsr IO_CHKOUT
-	ldx #0
-	stx BANK
+	ldx #DEFAULT_BANK
+	stx BANKREG
 	jmp $f82a
 	.)
 
@@ -98,11 +98,11 @@ chkout_ioext
 chkin_screen
 	jmp $f7da
 chkin_ioext
-	ldx #IOCOMPBANK
-	stx BANK
+	ldx #IOEXT_BANK
+	stx BANKREG
 	jsr IO_CHKIN
-	ldx #0
-	stx BANK
+	ldx #DEFAULT_BANK
+	stx BANKREG
 	jmp $f7dc
 	.)
 
@@ -132,11 +132,11 @@ out_ioext
 	tay		; translated device number
 	tsx
 	lda $0103,x	; AC output value
-	ldx #IOCOMPBANK
-	stx BANK
+	ldx #IOEXT_BANK
+	stx BANKREG
 	jsr IO_OUT
-	ldx #0
-	stx BANK
+	ldx #DEFAULT_BANK
+	stx BANKREG
 	tsx
 	lda $0103,x	; AC output value
 	ply
@@ -167,11 +167,11 @@ notkbd	jmp $f224
 out_ioext
 	phx
 	phy
-	ldx #IOCOMPBANK
-	stx BANK
+	ldx #IOEXT_BANK
+	stx BANKREG
 	jsr IO_IN
-	ldx #0
-	stx BANK
+	ldx #DEFAULT_BANK
+	stx BANKREG
 	ply
 	plx
 	rts
@@ -241,11 +241,11 @@ save_err
 closenottape
 	jmp $F315
 close_ioext
-	ldx #IOCOMPBANK
-	stx BANK
+	ldx #IOEXT_BANK
+	stx BANKREG
 	jsr IO_CLOSE
-	ldx #0
-	stx BANK
+	ldx #DEFAULT_BANK
+	stx BANKREG
 	jmp $F318
 	.)
 
@@ -268,17 +268,22 @@ close_ioext
 opentape
 	jmp $f598
 open_ioext
-	ldx #IOCOMPBANK
-	stx BANK
+	ldx #IOEXT_BANK
+	stx BANKREG
 	jsr IO_OPEN
-	ldx #0
-	stx BANK
+	ldx #DEFAULT_BANK
+	stx BANKREG
 	rts
 	.)
 
 ;--------------------------------------------------
 
 &NEWIRQ	.(
+	lda #IOEXT_BANK
+	sta BANKREG
+	jsr IO_IRQ
+	lda #DEFAULT_BANK
+	sta BANKREG
 &&origaddr	=*+1
 	jmp $ffff
 	.)

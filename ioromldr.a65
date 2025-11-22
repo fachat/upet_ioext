@@ -5,9 +5,10 @@
  */
 
 IOEXT_BASE	=$7000
-IOCOMPADDR	=$d4c0
-IOCOMPBANK	=14
-BANK		=$e802
+IOEXT_COMP	=$d4c0
+IOEXT_BANK	=14
+DEFAULT_BANK	=0
+BANKREG		=$e802
 
 
 	.word $0401
@@ -59,7 +60,7 @@ l1	sta $d4b3,y	; monitor code
 	.(
 	ldx #end-dosrom
 l1	lda dosrom-1,x
-	sta IOEXT_BASE + (IOCOMPBANK<<15) -1,x
+	sta IOEXT_BASE + (IOEXT_BANK<<15) -1,x
 	dex
 	bne l1
 	.)
@@ -69,7 +70,7 @@ l1	lda dosrom-1,x
 	.(
 	ldx #dosrom - MOVE
 l1	lda MOVE-1,x
-	sta IOCOMPADDR-1,x
+	sta IOEXT_COMP-1,x
 	dex
 	bne l1
 	.)
@@ -195,11 +196,11 @@ text
 STATUS	=$96
 
 MOVE:
-	*=IOCOMPADDR
+	*=IOEXT_COMP
 
 #include "ioext-comp.a65"
 
-	*=*-IOCOMPADDR+MOVE
+	*=*-IOEXT_COMP+MOVE
 dosrom:
 	*=IOEXT_BASE
 #define	PET
