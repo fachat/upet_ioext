@@ -197,7 +197,7 @@ STATUS	=$96
 MOVE:
 	*=IOCOMPADDR
 
-#include "ioromcomp.a65"
+#include "ioext-comp.a65"
 
 	*=*-IOCOMPADDR+MOVE
 dosrom:
