@@ -1,4 +1,7 @@
 
+; the majority of the calls have the device number
+; already in AC in normalized form, i.e. in the 
+; range starting from 0 up to 3
 
 	.(
 &IO_RESET	jmp do_reset
@@ -17,14 +20,76 @@ do_reset
 do_irq
 		jmp uart_irq
 do_open
+	; close channels
 do_close
+	asl
+	tax
+	lda v_close_list+1,x
+	beq v_rts
+	sta v+1
+	lda v_close_list,x
+	sta v
+	jmp (v)
+	
+	; set the output channel
 do_chkout
-do_chkin
-do_clrch_out
-do_clrch_in
-do_out
-do_in
+	asl
+	tax
+	lda v_out_list+1,x
+	beq do_clrch_out
+	sta v_out+1
+	lda v_out_list,x
+	sta v_out
 	rts
+
+	; set the input
+do_chkin
+	asl
+	tax
+	lda v_in_list+1,x
+	beq do_clrch_in
+	sta v_in+1
+	lda v_in_list,x
+	sta v_in
+	rts
+
+	; clear output
+do_clrch_out
+	lda #<v_rts
+	sta v_out
+	lda #>v_rts
+	sta v_out+1
+	rts
+	; clear input
+do_clrch_in
+	lda #<v_rtsc1
+	sta v_in
+	lda #>v_rtsc1
+	sta v_in+1
+	rts
+
+v_rtsc1
+	sec
+v_rts
+	rts
+
+	; out vector is set by chkout
+do_out
+	jmp (v_out)
+	; in vector is set by chkin
+do_in
+	jmp (v_in)
+
+v	.word 0
+v_out	.word 0
+v_in	.word 0
+
+v_out_list
+	.word 0, uart1_tx, uart2_tx, 0
+v_in_list
+	.word 0, uart1_rx, uart2_rx, 0
+v_close_list
+	.word 0, uart1_off, uart2_off, 0
 
 #include "ioext-stream.i65"
 #include "ioext-ser.a65"

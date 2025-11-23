@@ -40,7 +40,7 @@ UARTDIFF	=UART2-UART1
 	;---------------------------------
 	; transmit buffer
 
-	; get a char from send buffer in interrupt
+	; get a char from receive buffer in OS
 	; x is 0/UARTDIFF, returns char in A when C=0; C=1 -> no char
 &uart1_rx
 	ldx #0
@@ -68,7 +68,7 @@ empty	sec
 	rts
 	.)
 
-	; write a char to receive buffer from OS
+	; write a char to receive buffer from interrupt
 	; x is/UARTDIFF, a is byte to send
 	; returns c=0 or c=1 (error)
 stream_put .(

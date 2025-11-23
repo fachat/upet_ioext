@@ -334,15 +334,14 @@ is_ioext .(
 	cmp #2
 	bcc no		; tape1
 	beq ser1	; ser1
-	cmp #24		; rest up to 23 is IEEE/IEC
+	cmp #16		; rest up to 15 is IEEE/IEC
 	bcc no
-	cmp #28		; 4 device nos in ioext
+	cmp #20		; 4 device nos in ioext
 	bcs no
-	cmp #25
+	cmp #18
 	beq tape2
-ser1	lda #25
-yes	sec
-	sbc #24		; return AC as 0,1,2,3
+ser1	lda #17
+yes	and #3		; return AC as 0,1,2,3
 	rts
 tape2	lda #2
 no	clc
