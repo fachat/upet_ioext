@@ -35,7 +35,64 @@ UARTDIFF	=UART2-UART1
 &uart_irq 
 	jmp devirq
 
-
+	;---------------------------------
+	; setup the RS232
+	; 
+	; uses the first two chars of the filename as config bytes
+	; as taken from the C64
+	;
+	; 1st byte
+	;	b7	0	1 stop bit
+	;		1	2 stop bits
+	;
+	;	b5,6=	0	8 bit
+	;		32	7 bit
+	;		64	6 bit
+	;		96	5 bit
+	;
+	;	b3-0=	0	custom baud rata
+	;		1	50 baud
+	;		2	75 baud
+	;		3	110 baud
+	;		4	134.5 baud
+	;		5	150 baud
+	;		6	300 baud
+	;		7	600 baud
+	;		8	1200 baud
+	;		9	1800 baud
+	;		10	2400 baud
+	;		11	3600 baud
+	;		12	4800 baud
+	;		13	7200 baud
+	;		14	9600 baud
+	;		15	19200 baud
+	;
+	; 2nd byte
+	;	b7,6,5	x,x,0	no parity
+	;		0,0,1	odd parity
+	;		0,1,0	even parity
+	;		1,0,1	parity bit always 1
+	;		1,1,1	parity bit always 0
+	;
+	;	b4	0	full duplex
+	;		1	half duplex
+	;
+	;	b1,2,3	-
+	;
+	;	b0	0	3-wire handshake (i.e. no RTS/CTS)
+	;		1	X-wire handshake
+	;
+&uart1_open
+	ldx #0
+	.byt $2c
+&uart2_open
+	ldx #UARTDIFF
+	; check first two chars of the filename
+	lda IOEXT_FILENAME
+	and #$0f
+	tay
+	jsr ser_speed
+	rts
 
 	;---------------------------------
 	; transmit buffer
@@ -417,11 +474,6 @@ ser_off	jsr rtshi
 	rts
 
 ; y has index in divisor table
-&uart1_speed
-	ldx #0
-	.byt $2c
-&uart2_speed
-	ldx #UARTDIFF
 ser_speed
 	lda UARTBASE + UART_LCR,x
 	ora #$80

@@ -16,10 +16,20 @@
 &IO_IN		jmp do_in
 
 do_reset
-		jmp uart_res
+	jsr do_clrch_out
+	jsr do_clrch_in
+	jmp uart_res
 do_irq
-		jmp uart_irq
+	jmp uart_irq
 do_open
+	asl
+	tax
+	lda v_open_list+1,x
+	beq v_rts
+	sta v+1
+	lda v_open_list,x
+	sta v
+	jmp (v)
 	; close channels
 do_close
 	asl
@@ -90,6 +100,8 @@ v_in_list
 	.word 0, uart1_rx, uart2_rx, 0
 v_close_list
 	.word 0, uart1_off, uart2_off, 0
+v_open_list
+	.word 0, uart1_open, uart2_open, 0
 
 #include "ioext-stream.i65"
 #include "ioext-ser.a65"

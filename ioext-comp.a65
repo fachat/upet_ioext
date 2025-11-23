@@ -271,6 +271,7 @@ open_ioext
 	; copy over filename to IOEXT_BANK
 	; so that only need to give the length in registers
 	; and have no bank stuff in the actual core
+	pha
 	.(
 	ldy #0
 	ldx #0
@@ -284,6 +285,7 @@ l	cpy FN_LEN
 e	lda #0
 	sta IOEXT_FILENAME+(IOEXT_BANK<<15),x
 	.)
+	pla
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_OPEN

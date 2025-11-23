@@ -85,7 +85,7 @@ l1	lda MOVE-1,x
 
 	; -----------------------------
 	; patch it into ROM
-
+	.(
 	lda #$4c
 	ldx #CLRCH
 
@@ -123,15 +123,17 @@ l1	lda MOVE-1,x
 	ldx #OPEN
 	sta $f593
 	stx $f594
+	.)
 
 	; -----------------------------
 	; init reset code
 
+	.(
 	ldx #NEWRESET
 	ldy $fd1c
 	stx $fd1c
 	sty origres
-
+	.)
 	
 	; -----------------------------
 	; 8bit index registers
