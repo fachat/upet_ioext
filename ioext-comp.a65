@@ -20,6 +20,8 @@
 
 &CLRCH 	.(
 	phx
+	php
+	sei
 	lda $b0
 	jsr is_ioext
 	bcs out_ioext
@@ -30,9 +32,11 @@ chkinput
 	lda $af
 	jsr is_ioext
 	bcs in_ioext
+	plp
 	plx
 	jmp $f2b3
 clrch_exit
+	plp
 	plx
 	jmp $f2b8
 out_ioext
@@ -72,12 +76,16 @@ in_ioext
 chkout_screen
 	jmp $f828	
 chkout_ioext
+	php
+	sei
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_CHKOUT
 	ldx #DEFAULT_BANK
 	stx BANKREG
-	jmp $f82a
+	plp
+	lda $d4
+	jmp $f828
 	.)
 
 ;--------------------------------------------------
@@ -98,11 +106,14 @@ chkout_ioext
 chkin_screen
 	jmp $f7da
 chkin_ioext
+	php
+	sei
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_CHKIN
 	ldx #DEFAULT_BANK
 	stx BANKREG
+	plp
 	jmp $f7dc
 	.)
 
@@ -132,15 +143,17 @@ out_ioext
 	tay		; translated device number
 	tsx
 	lda $0103,x	; AC output value
+	php
+	sei
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_OUT
 	ldx #DEFAULT_BANK
 	stx BANKREG
-	tsx
-	lda $0103,x	; AC output value
+	plp
 	ply
 	plx
+	pla
 	rts
 	.)
 
@@ -167,11 +180,14 @@ notkbd	jmp $f224
 out_ioext
 	phx
 	phy
+	php
+	sei
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_IN
 	ldx #DEFAULT_BANK
 	stx BANKREG
+	plp
 	ply
 	plx
 	rts
@@ -241,11 +257,14 @@ save_err
 closenottape
 	jmp $F315
 close_ioext
+	php
+	sei
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_CLOSE
 	ldx #DEFAULT_BANK
 	stx BANKREG
+	plp
 	jmp $F318
 	.)
 
@@ -286,11 +305,14 @@ e	lda #0
 	sta IOEXT_FILENAME+(IOEXT_BANK<<15),x
 	.)
 	pla
+	php
+	sei
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_OPEN
 	ldx #DEFAULT_BANK
 	stx BANKREG
+	plp
 	rts
 	.)
 

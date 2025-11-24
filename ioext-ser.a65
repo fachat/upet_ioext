@@ -92,7 +92,7 @@ UARTDIFF	=UART2-UART1
 	and #$0f
 	tay
 	jsr ser_speed
-	rts
+	jmp ser_on
 
 	;---------------------------------
 	; transmit buffer
