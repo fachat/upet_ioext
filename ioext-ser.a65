@@ -90,7 +90,6 @@ UARTDIFF	=UART2-UART1
 	; check first two chars of the filename
 	lda IOEXT_FILENAME
 	and #$0f
-	tay
 	jsr ser_speed
 	jmp ser_on
 
@@ -105,9 +104,11 @@ UARTDIFF	=UART2-UART1
 &uart2_rx
 	ldx #UARTDIFF
 stream_receive .(
+inc $8000
 	lda u1_rxrp,x
 	cmp u1_rxwp,x
 	beq empty
+inc $8001
 	tay
 	txa
 	bne u2_get
@@ -138,16 +139,13 @@ stream_put .(
 	beq full
 	pla
 	cpx #0
-	beq u2_put
+	bne u2_put
 	sta u1_rxbuf,y
-	bne ux_end
+	beq ux_end
 u2_put	sta u2_rxbuf,y
 ux_end	iny
 	tya
 	sta u1_rxwp,x
-	sec
-	sbc u1_rxrp,x
-	
 	clc
 	rts
 full	pla
@@ -172,8 +170,8 @@ stream_get .(
 	bra ux_end
 u2_get	lda u2_txbuf,y
 ux_end	pha
-	tya
 	iny
+	tya
 	sta u1_txrp,x
 	pla
 	clc
@@ -288,6 +286,8 @@ res
 	sta UARTBASE+UART_DLL,x
 	lda divisor+1,y
 	sta UARTBASE+UART_DLH,x
+	lda #0
+	sta UARTBASE+UART_PSD,x
 	lda #%00000011			; 8N1
 	sta UARTBASE+UART_LCR,x
  
@@ -365,11 +365,12 @@ nbyt
 rx2	.(
 	lda UARTBASE+UART_RXTX,x
 	tay
-
 	lda u1_st,x
 	bpl rx2end
-
-	; char is in y
+	tya
+inc $8027
+sty $8026
+	; char is in a
 	; x is 0 or UARTDIFF
 	jsr stream_put
 	bcc rx2end
@@ -391,7 +392,6 @@ tx2 	.(
 	lda u1_st,x
 	and #$40
         beq txrt		; reading IIR should clear this line
-
 	lda UARTBASE + UART_MSR,x
 	and #%00110000
 	cmp #%00110000		; cts or dsr inactive
@@ -425,7 +425,8 @@ dtrlo
 	lda UARTBASE + UART_MCR,x
 	ora #%00000001
 	sta UARTBASE + UART_MCR,x
-	lda #3
+	;lda #3
+	lda #1
 	sta UARTBASE + UART_IER,x
 	rts
 
@@ -475,6 +476,8 @@ ser_off	jsr rtshi
 
 ; y has index in divisor table
 ser_speed
+	asl
+	tay
 	lda UARTBASE + UART_LCR,x
 	ora #$80
 	sta UARTBASE + UART_LCR,x
@@ -482,6 +485,8 @@ ser_speed
 	sta UARTBASE + UART_DLL,x
 	lda divisor+1,y
 	sta UARTBASE + UART_DLH,x
+	lda #0
+	sta UARTBASE + UART_PSD,x
 	lda UARTBASE + UART_LCR,x
 	and #$7f
 	sta UARTBASE + UART_LCR,x

@@ -1,0 +1,9 @@
+
+ 100 open2,2,2,chr$(15)
+ 110 get a$:if a$="" then 130
+ 120 print#2,a$;
+ 130 get#2,a$:if a$="" then 150
+ 140 print a$;
+ 150 goto 110
+
+

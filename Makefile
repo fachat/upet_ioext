@@ -5,7 +5,7 @@ XAARGS=-w -XMASM -XCA65
 
 SUPPORT=ioromldr 
 
-all: ioext-core.bin $(SUPPORT) 
+all: ioext-core.bin $(SUPPORT) term
 
 %.bin: %.a65
 	xa $(XAARGS) -o $@ $<
@@ -16,7 +16,11 @@ ioext-core.bin: $(DEPS)
 ioromldr: ioromldr.a65 ioext-comp.a65 $(DEPS)
 	xa $(XAARGS) -P $@.lst -DPET -o $@ $<
 
+term: term.lst
+	petcat -w40 -o $@ -- $<
+
 clean:
 	rm -f *.bin *.lst
 	rm -f $(SUPPORT)
+	rm -f term
 

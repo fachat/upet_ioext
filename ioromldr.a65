@@ -205,7 +205,11 @@ exit	; x/y has the original interrupt routine address
 	xce
 
 	; init the serial code
+	lda #$60	; RTS
+	sta origres-1
 	jsr NEWRESET
+	lda #$4c	; JMP
+	sta origres-1
 
 	; restore memory protection
 	lda #$d0
