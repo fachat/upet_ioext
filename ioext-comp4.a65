@@ -101,14 +101,12 @@ chkout_ioext
 ; F7CE		BCS $F7DF
 ;
 &CHKIN	.(
-	tax
 	jsr is_ioext
 	bcs chkin_ioext
 	cmp #3
 	beq chkin_screen
 	jmp $f7ce
 chkin_ioext
-	phx
 	php
 	sei
 	ldx #IOEXT_BANK
@@ -117,7 +115,7 @@ chkin_ioext
 	ldx #DEFAULT_BANK
 	stx BANKREG
 	plp
-	pla
+	lda $d4
 chkin_screen
 	jmp $f7da
 	.)
@@ -381,8 +379,9 @@ is_ioext .(
 	bcc no
 	cmp #20		; 4 device nos in ioext
 	bcs no
-	cmp #18
+	cmp #17		;
 	beq tape2
+	.byt $2c
 ser1	lda #17
 yes	and #3		; return AC as 0,1,2,3
 	rts
