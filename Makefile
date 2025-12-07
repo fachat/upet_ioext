@@ -1,9 +1,12 @@
 
 DEPS=ioext-core.a65 ioext-ser.a65 ioext-stream.i65
 
-XAARGS=-w -XMASM -XCA65
+IOEXT_FILENAME=512
 
-SUPPORT=ioromldr 
+XAARGS=-w -XMASM -XCA65 -DIOEXT_FILENAME=$(IOEXT_FILENAME) 
+
+SUPPORT=ioromldr4
+
 
 all: ioext-core.bin $(SUPPORT) term
 
@@ -11,12 +14,12 @@ all: ioext-core.bin $(SUPPORT) term
 	xa $(XAARGS) -o $@ $<
 
 ioext-core.bin: $(DEPS)
-	xa $(XAARGS) -P $@.lst -DPET -o $@ $<
+	xa $(XAARGS) -P $@.lst -o $@ $<
 
-ioromldr: ioromldr.a65 ioext-comp.a65 $(DEPS)
-	xa $(XAARGS) -P $@.lst -DPET -o $@ $<
+ioromldr4: ioromldr4.a65 ioext-comp4.a65 $(DEPS)
+	xa $(XAARGS) -P $@.lst -o $@ $<
 
-term: term.lst
+term: term.bas
 	petcat -w40 -o $@ -- $<
 
 clean:

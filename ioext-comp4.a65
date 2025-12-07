@@ -1,6 +1,9 @@
 
 .(
 
+FN_PTR          =$da
+FN_LEN          =$d1
+
 	; -------------------------------------------------------
 	; the following code is copied into the ROM and called
 	; from the patches into the kernal I/O code

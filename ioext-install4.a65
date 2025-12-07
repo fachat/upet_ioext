@@ -4,84 +4,9 @@
  * to include the ROM companion functions.
  */
 
-IOEXT_BASE	=$7000
-IOEXT_COMP	=$d4c0
-IOEXT_BANK	=14
-DEFAULT_BANK	=0
-BANKREG		=$e802
-IOEXT_FILENAME	=$0200
-FN_PTR		=$da
-FN_LEN		=$d1
-
-
-	.word $0401
-	*=$0401
-
-	.word eol		; BASIC link pointer
-	.word 10		; line number
-	.byt $9e, "1040", 0	; BASIC code (tokenized)
-eol	.word 0			; BASIC link pointer, 0 means end of code
-	.dsb 1040-*
-
-	; start after sys
-	sei
-
-	; native mode
-	clc
-	xce
-	; make ROM writeable
-	lda #0
-	sta $e801
-
-	; -----------------------------
-	; remove monitor to make room 
-
-	; copy monitor exit code to monitor entry
-	.(
-	ldy #0
-l1	lda $d66b,y
-	sta $d4ac,y
-	iny
-	cpy #7
-	bcc l1
-	.)
-
-	; clear out monitor area
-	; $d4b3 - d7a3
-	.(
-	lda #$ea	; NOP opcode
-	ldy #0
-l1	sta $d4b3,y	; monitor code
-	sta $d5b3,y
-	sta $d7a3-$0100,y
-	iny
-	bne l1
-	.)
-
-	; 16bit index registers
-	rep #%00010000
 	.xl
 
-	; -----------------------------
-	; copy over core
-	.(
-	ldx #end-dosrom
-l1	lda dosrom-1,x
-	sta IOEXT_BASE + (IOEXT_BANK<<15) -1,x
-	dex
-	bne l1
-	.)
-
-	; -----------------------------
-	; copy over companion
-
-	.(
-	ldx #dosrom - MOVE
-l1	lda MOVE-1,x
-	sta IOEXT_COMP-1,x
-	dex
-	bne l1
-	.)
+ioext_patch4_xl .(
 
 	; -----------------------------
 	; patch it into ROM
@@ -198,47 +123,8 @@ exit	; x/y has the original interrupt routine address
 	; exit install
 
         plp
+	rts
 	.)
 
-	; emulation mode
-	sec
-	xce
-
-	; init the serial code
-	lda #$60	; RTS
-	sta origres-1
-	jsr NEWRESET
-	lda #$4c	; JMP
-	sta origres-1
-
-	; restore memory protection
-	lda #$d0
-	sta $e801
-
-	cli
-
-	ldy #0
-tl	lda text,y
-	beq tend
-	jsr $ffd2
-	iny
-	bne tl
-tend	rts
-text
-	.asc 13,"INSTALLATION SUCCESSFUL",13, 0	
-
-STATUS	=$96
-
-MOVE:
-	*=IOEXT_COMP
-
-#include "ioext-comp.a65"
-
-	*=*-IOEXT_COMP+MOVE
-dosrom:
-	*=IOEXT_BASE
-#define	PET
-#include "ioext-core.a65"
-	*=*-IOEXT_BASE+dosrom
-end
+	.)
 
