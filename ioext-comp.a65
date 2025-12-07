@@ -192,9 +192,19 @@ out_ioext
 	jsr IO_IN
 	ldx #DEFAULT_BANK
 	stx BANKREG
+	bcs nobyt
+	; needs to clr Z flag
 	plp
 	ply
 	plx
+	bne zclr
+	cpx nobyt	; compare with no-zero mem
+zclr	rts
+nobyt	; needs to set Z flag
+	plp
+	ply
+	plx
+	lda zero
 	rts
 	.)
 
@@ -297,6 +307,7 @@ open_ioext
 	; and have no bank stuff in the actual core
 	pha
 	.(
+&&zero	=*+1		; for CHRIN
 	ldy #0
 	ldx #0
 l	cpy FN_LEN

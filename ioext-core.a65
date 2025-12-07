@@ -54,8 +54,6 @@ do_chkout
 
 	; set the input
 do_chkin
-inc $8004
-sta $8005
 	asl
 	tax
 	lda v_in_list+1,x

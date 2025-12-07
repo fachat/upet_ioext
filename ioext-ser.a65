@@ -104,11 +104,9 @@ UARTDIFF	=UART2-UART1
 &uart2_rx
 	ldx #UARTDIFF
 stream_receive .(
-inc $8000
 	lda u1_rxrp,x
 	cmp u1_rxwp,x
 	beq empty
-inc $8001
 	tay
 	txa
 	bne u2_get
