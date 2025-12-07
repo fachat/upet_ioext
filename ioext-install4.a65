@@ -61,63 +61,41 @@ ioext_patch4_xl .(
 	.)
 	
 	; -----------------------------
-	; 8bit index registers
-	sep #%00010000
-	.xs
-
-	; -----------------------------
 	; install interrupt code
 	.(
-        lda #<NEWIRQ
-        ldx #>NEWIRQ
-
-        ; set interrupt addr from a/x
-        php
-        sei
-
-	; make ac free
-        pha
+        ldx #NEWIRQ
 
         ; x is not modified
         lda $e455       ; standard interrupt routine
         cmp #$4c        ; JMP on some ROMs
         beq dojmp
-        lda #<$e456
-        ldy #>$e456
-        bne inject
+        ldy #$e456
+        bra inject
 
-dojmp   ldy $e457       ; E455 JMP XXXX ; get address from JMP
-        lda $e456
-        inc             ; no overflow in current ROM
+dojmp   ldy $e456       ; E455 JMP XXXX ; get address from JMP
+        iny 
 inject
-        sta addr2
-        sty addr2+1
-        sta addr3
-        sty addr3+1
+	; set address we actually patch
+        sty addr2
+        sty addr3
 
-        pla
-	; a/x has the new interrupt target address
-        clc
-        .byt $24
-next2   sec
-addr3   =*+1
-        ldy $ffff
-addr2   =*+1
-        sta $ffff       ; set from above
-        inc addr2
-        inc addr3
-        ; no overflow on current ROMs
-        bcs exit
-        phy
-        txa
-        plx
-        bcc next2
-exit	; x/y has the original interrupt routine address
+	; protect from interrupts
+        php
+        sei
+
+	; switch target address of JSR in interrupt routine for ours
+	; x has the new interrupt target address
+	; $ffff is replaced 
+addr2	=*+1
+        ldy $ffff	; save the original
+addr3	=*+1
+        stx $ffff       ; set from above
+
+	; y has the original interrupt routine address
 	; we're patching into.
 	
         ; save the original addr
-        stx origirq
-        sty origirq+1
+        sty origirq
 
 	; -----------------------------
 	; exit install

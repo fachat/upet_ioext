@@ -81,8 +81,11 @@ l1	lda MOVE-1,x
 	bne l1
 	.)
 
-	; note - returns in xs for now
+	; patches in the ioext routines
 	jsr ioext_patch4_xl
+
+	; 8bit index registers
+	sep #%00010000
 	.xs
 
 	.(
@@ -120,6 +123,7 @@ STATUS	=$96
 
 #include "ioext-install4.a65"
 
+	.xs
 MOVE:
 	*=IOEXT_COMP
 
