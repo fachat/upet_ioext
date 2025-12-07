@@ -105,8 +105,8 @@ l1	lda MOVE-1,x
 	stx $f267
 
 	ldx #CHRIN
-	sta $f215
-	stx $f216
+	sta $f224
+	stx $f225
 
 	ldx #LOAD
 	sta $f35d

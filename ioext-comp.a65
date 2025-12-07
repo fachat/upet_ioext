@@ -98,14 +98,14 @@ chkout_ioext
 ; F7CE		BCS $F7DF
 ;
 &CHKIN	.(
+	tax
 	jsr is_ioext
 	bcs chkin_ioext
 	cmp #3
 	beq chkin_screen
 	jmp $f7ce
-chkin_screen
-	jmp $f7da
 chkin_ioext
+	phx
 	php
 	sei
 	ldx #IOEXT_BANK
@@ -114,7 +114,9 @@ chkin_ioext
 	ldx #DEFAULT_BANK
 	stx BANKREG
 	plp
-	jmp $f7dc
+	pla
+chkin_screen
+	jmp $f7da
 	.)
 
 ;--------------------------------------------------
@@ -158,7 +160,10 @@ out_ioext
 	.)
 
 ;--------------------------------------------------
-; Injected at $f215
+; Injected at $f224
+; 
+; reason is that GET# jumps there from F205 if
+; current input is not coming from screen or keyboard
 ;
 ; F215	iF215	LDA $AF		; Default Input Device (0)
 ; F217		BNE $F224
@@ -169,14 +174,14 @@ out_ioext
 ; F221		JMP $E116	; Input From Screen or Keyboard
 ; F224	iF224	CMP #$03
 ; F226		BNE $F231	; -	Get From Tape / IEEE
+; F228		STA $AC		; Flag: INPUT or GET from keybord
 &CHRIN	.(
-	lda $af
 	jsr is_ioext
 	bcs out_ioext
-	cmp #0
-	bne notkbd
-	jmp $f219
-notkbd	jmp $f224
+	cmp #3
+	bne notscr
+	jmp $f228
+notscr	jmp $f231
 out_ioext
 	phx
 	phy
