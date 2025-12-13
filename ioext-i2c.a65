@@ -1,0 +1,41 @@
+
+;
+; code that handles the I2C interface in the Ulti-PET
+;
+;
+	.( 
+
+&i2c_ckout .(
+	bcc off
+	jsr i2c_init
+	jsr i2c_start
+off	clc
+	rts
+	.)
+
+&i2c_send .(
+	jsr i2c_sendbyt
+	clc
+	rts
+	.)
+
+&i2c_ckin
+&i2c_recv
+
+&i2c_open .(
+inc $8000
+	jsr i2c_reset
+	jsr i2c_init
+inc $8001
+	clc
+	rts
+	.)
+	
+&i2c_close .(
+	jsr i2c_end
+	rts
+	.)
+
+#include "i2clib.a65"
+	.)
+

@@ -1,0 +1,159 @@
+
+;
+; I2C hardware abstraction layer
+;
+; i2c_reset
+;	resets I2C bus
+; i2c_init
+;	init the receiver
+;	input: AC = own listen address
+; i2c_start
+;	start a transmision
+; i2c_sendbyt
+;	send a byt 
+;	input: AC is value to send
+; i2c_stop
+;	send stop condition
+; i2c_end
+;	
+;	
+	.(
+
+#include "i2clib.i65"
+
+&i2c_reset .(
+        lda #0
+        sta I2C + I2C_CTRL
+
+        lda #5          ; PRESET register
+        sta I2C + I2C_INDPTR
+
+        ; reset code
+        lda #$a5
+        sta I2C + I2C_INDIRECT
+        lda #$5a
+        sta I2C + I2C_INDIRECT
+
+        ldx #10
+l       dex
+        bne l
+        rts     
+        .)
+
+&i2c_init .(
+	pha
+
+        lda #0  ;lda #$ff
+        sta I2C + I2C_TIMEOUT
+
+        pla
+        sta I2C + I2C_OWNADDR
+
+        lda #I2C_C_ENSIO | I2C_C_CLOCK
+        sta I2C + I2C_CTRL
+
+        .(                      ; wait 550u
+        ldx #110
+wait    dex
+        bne wait
+        .)
+
+        clc
+        rts
+        .)
+
+&i2c_start .(
+        lda #I2C_C_ENSIO | I2C_C_STA | I2C_C_AA | I2C_C_CLOCK
+        sta I2C + I2C_CTRL      ; triggers SI serial interrupt with STA
+
+        .(                      ; wait for SI
+        lda #I2C_C_SI
+wait    bit I2C + I2C_CTRL
+        beq wait
+        .)
+
+        lda I2C + I2C_STATUS
+        cmp #$08
+;       beq w1
+;       cmp #$10                ; repeated START (should not happen)
+        bne err08
+;w1
+        ;lda #(ADDR << 1)+0     ; r/w bit = 0 -> write
+        txa
+        asl
+        sta I2C + I2C_DATA
+
+        lda #I2C_C_ENSIO | I2C_C_CLOCK | I2C_C_AA
+        sta I2C + I2C_CTRL      ; send address
+
+        .(
+        lda #I2C_C_SI
+wait    bit I2C + I2C_CTRL
+        beq wait
+        .)
+
+        lda I2C + I2C_STATUS
+        cmp #$18
+        bne err18
+        clc
+        rts
+        .)
+
+&i2c_sendbyt .(
+        sta I2C + I2C_DATA
+
+        lda #I2C_C_ENSIO | I2C_C_AA | I2C_C_CLOCK
+        sta I2C + I2C_CTRL      ; send data
+
+        .(
+        lda #I2C_C_SI
+wait    bit I2C + I2C_CTRL
+        beq wait
+        .)
+
+        lda I2C + I2C_STATUS
+        and #$f8
+        cmp #$28
+        bne err28
+        clc
+        rts
+        .)
+
+
+        ; check number of bytes (here = 1), go loop start if more
+&i2c_stop .(
+        lda #I2C_C_ENSIO | I2C_C_AA | I2C_C_STO | I2C_C_CLOCK
+        sta I2C + I2C_CTRL      ; generate stop condition
+
+        ; verify
+
+        lda I2C + I2C_CTRL
+        and #I2C_C_STO
+        ;bne errsto
+        clc
+        rts
+        .)
+
+&i2c_end .(
+        ldy #10
+l       dey
+        bne l
+        ldy #0
+        sty I2C + I2C_CTRL
+        clc
+        rts
+        .)
+
+
+errsto  ldx #1
+        .byt $2c
+err08   ldx #$08
+        .byt $2c
+err18   ldx #$18
+        .byt $2c
+err28   ldx #$28
+        sec
+        rts
+
+	.)
+

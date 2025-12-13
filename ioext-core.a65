@@ -25,11 +25,13 @@ do_open
 	asl
 	tax
 	lda v_open_list+1,x
-	beq v_rts
+	beq v_rts2
 	sta v+1
 	lda v_open_list,x
 	sta v
-	jmp (v)
+do_v	jmp (v)
+v_rts2	rts
+
 	; close channels
 do_close
 	asl
@@ -45,6 +47,16 @@ do_close
 do_chkout
 	asl
 	tax
+	lda v_ckout_list+1,x
+	beq no_ckout
+	sta v+1
+	lda v_ckout_list,x
+	sta v
+	phx
+	sec		; set output
+	jsr do_v
+	plx
+no_ckout
 	lda v_out_list+1,x
 	beq do_clrch_out
 	sta v_out+1
@@ -56,6 +68,16 @@ do_chkout
 do_chkin
 	asl
 	tax
+	lda v_ckin_list+1,x
+	beq no_ckin
+	sta v+1
+	lda v_ckin_list,x
+	sta v
+	phx
+	sec		; set input
+	jsr do_v
+	plx
+no_ckin
 	lda v_in_list+1,x
 	beq do_clrch_in
 	sta v_in+1
@@ -94,17 +116,22 @@ v	.word 0
 v_out	.word 0
 v_in	.word 0
 
+v_ckout_list
+	.word i2c_ckout, 0, 0, 0
+v_ckin_list
+	.word i2c_ckin, 0, 0, 0
 v_out_list
-	.word 0, uart1_tx, uart2_tx, 0
+	.word i2c_send, uart1_tx, uart2_tx, 0
 v_in_list
-	.word 0, uart1_rx, uart2_rx, 0
+	.word i2c_recv, uart1_rx, uart2_rx, 0
 v_close_list
-	.word 0, uart1_off, uart2_off, 0
+	.word i2c_close, uart1_off, uart2_off, 0
 v_open_list
-	.word 0, uart1_open, uart2_open, 0
+	.word i2c_open, uart1_open, uart2_open, 0
 
 #include "ioext-stream.i65"
 #include "ioext-ser.a65"
+#include "ioext-i2c.a65"
 
 	.)
 

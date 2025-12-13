@@ -1,0 +1,24 @@
+
+
+
+
+IO_ADDR         =$10
+
+I2C             =$e80c
+
+I2C_STATUS      =0
+I2C_TIMEOUT     =0
+I2C_DATA        =1
+I2C_OWNADDR     =2
+I2C_CTRL        =3
+I2C_INDPTR      =0      /* write only */
+I2C_INDIRECT    =2
+
+I2C_C_AA        =%10000000
+I2C_C_ENSIO     =%01000000
+I2C_C_STA       =%00100000
+I2C_C_STO       =%00010000
+I2C_C_SI        =%00001000
+I2C_C_CLOCK     =%00000101      ; 59kHz I2C clock
+
+

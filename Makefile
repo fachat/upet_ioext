@@ -1,5 +1,5 @@
 
-DEPS=ioext-core.a65 ioext-ser.a65 ioext-stream.i65
+DEPS=ioext-core.a65 ioext-ser.a65 ioext-stream.i65 ioext-i2c.a65 i2clib.a65 i2clib.i65
 
 IOEXT_FILENAME=512
 
