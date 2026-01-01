@@ -136,11 +136,14 @@ chkin_screen
 
 &CHROUT	.(
 	pha
+inc $8007
 	lda $b0
+sta $800a
 	jsr is_ioext
 	bcs out_ioext
 	jmp $f269
 out_ioext
+sta $8008
 	phx
 	phy
 	tay		; translated device number
@@ -384,6 +387,7 @@ is_ioext .(
 	.byt $2c
 ser1	lda #17
 yes	and #3		; return AC as 0,1,2,3
+	sec
 	rts
 tape2	lda #2
 no	clc

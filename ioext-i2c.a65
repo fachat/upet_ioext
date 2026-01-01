@@ -6,14 +6,22 @@
 	.( 
 
 &i2c_ckout .(
+inc $8002
 	bcc off
-	jsr i2c_init
+inc $8003
+	ldx #$10	; address (for now)
 	jsr i2c_start
-off	clc
+inc $8004
+	clc
+	rts
+off
+	jsr i2c_stop
+	clc
 	rts
 	.)
 
 &i2c_send .(
+inc $8009
 	jsr i2c_sendbyt
 	clc
 	rts
@@ -21,11 +29,12 @@ off	clc
 
 &i2c_ckin
 &i2c_recv
+	rts
 
 &i2c_open .(
 inc $8000
 	jsr i2c_reset
-	jsr i2c_init
+;	jsr i2c_init
 inc $8001
 	clc
 	rts
