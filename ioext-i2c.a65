@@ -2,31 +2,64 @@
 ;
 ; code that handles the I2C interface in the Ulti-PET
 ;
+; Note:
+; The I2C bus is susceptible to timeouts. Just
+; using the kernel routines can lead to such timeout scenarios
+; Therefore, for sending, we buffer data and only send it on
+; CLRCH or when setting output to another channel
 ;
 	.( 
 
 &i2c_ckout .(
-	bcc off
-	jsr i2c_init
+	bcs on
+	; send data to target
+	jsr send
+
+on	lda #0
+	sta len
+	clc
+	rts
+	.)
+
+send 	.(
+	lda len
+	beq nosend
+&sendall
+	ldy #0
+
+	ldx #$10	
 	jsr i2c_start
-off	clc
+
+l	lda sendbuf,y
+	jsr i2c_sendbyt
+
+	iny
+	cpy len
+	bcc l
+
+	jsr i2c_stop
+nosend	clc
 	rts
 	.)
 
 &i2c_send .(
-	jsr i2c_sendbyt
-	clc
+	ldx len
+	sta sendbuf,x
+	inc len
+	bne nowrap
+	jsr sendall
+nowrap	clc
 	rts
 	.)
 
 &i2c_ckin
 &i2c_recv
+	rts
 
 &i2c_open .(
-inc $8000
 	jsr i2c_reset
-	jsr i2c_init
-inc $8001
+	lda #0
+	sta len
 	clc
 	rts
 	.)
@@ -37,5 +70,9 @@ inc $8001
 	.)
 
 #include "i2clib.a65"
+
+len	.byt 0
+sendbuf	.dsb 256
+
 	.)
 

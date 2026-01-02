@@ -384,6 +384,7 @@ is_ioext .(
 	.byt $2c
 ser1	lda #17
 yes	and #3		; return AC as 0,1,2,3
+	sec
 	rts
 tape2	lda #2
 no	clc

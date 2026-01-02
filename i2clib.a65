@@ -4,7 +4,7 @@
 ;
 ; i2c_reset
 ;	resets I2C bus
-; i2c_init
+; i2c_init_rx
 ;	init the receiver
 ;	input: AC = own listen address
 ; i2c_start
@@ -37,10 +37,17 @@
         ldx #10
 l       dex
         bne l
+
+	lda #4		; I2CTO timeout register
+	sta I2C + I2C_INDPTR
+	
+	; disable timeout, as we are too slow...
+	lda #0
+	sta I2C + I2C_INDIRECT
         rts     
         .)
 
-&i2c_init .(
+&i2c_init_rx .(
 	pha
 
         lda #0  ;lda #$ff
@@ -68,16 +75,17 @@ wait    dex
 
         .(                      ; wait for SI
         lda #I2C_C_SI
-wait    bit I2C + I2C_CTRL
+wait    
+	bit I2C + I2C_CTRL
         beq wait
         .)
 
         lda I2C + I2C_STATUS
         cmp #$08
-;       beq w1
-;       cmp #$10                ; repeated START (should not happen)
+        beq w1
+        cmp #$10                ; repeated START (should not happen)
         bne err08
-;w1
+w1
         ;lda #(ADDR << 1)+0     ; r/w bit = 0 -> write
         txa
         asl
@@ -88,7 +96,8 @@ wait    bit I2C + I2C_CTRL
 
         .(
         lda #I2C_C_SI
-wait    bit I2C + I2C_CTRL
+wait    
+	bit I2C + I2C_CTRL
         beq wait
         .)
 
@@ -107,7 +116,8 @@ wait    bit I2C + I2C_CTRL
 
         .(
         lda #I2C_C_SI
-wait    bit I2C + I2C_CTRL
+wait    
+	bit I2C + I2C_CTRL
         beq wait
         .)
 

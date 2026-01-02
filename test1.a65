@@ -1,0 +1,67 @@
+
+/*
+ * this file installs the iorom driver in bank 7 and patches the BASIC 4 ROM
+ * to include the ROM companion functions.
+ */
+
+IOEXT_BASE	=$7000
+IOEXT_COMP	=$d4c0
+IOEXT_BANK	=0
+DEFAULT_BANK	=0
+BANKREG		=$e802
+;IOEXT_FILENAME	=$0200		; injected as in sync with core
+
+
+	.word $0401
+	*=$0401
+
+	.word eol		; BASIC link pointer
+	.word 10		; line number
+	.byt $9e, "1040", 0	; BASIC code (tokenized)
+eol	.word 0			; BASIC link pointer, 0 means end of code
+	.dsb 1040-*
+
+	; start after sys
+	ldy #0
+tl	lda text,y
+	beq tend
+	jsr $ffd2
+	iny
+	bne tl
+tend	;rts
+
+	sei
+	;---------------------------------------
+	; actual test
+inc $8000
+	jsr i2c_reset
+
+inc $8001
+	ldx #$10
+	jsr i2c_start
+
+inc $8002
+	lda #64
+	jsr i2c_sendbyt
+
+inc $8003
+	lda #64
+	jsr i2c_sendbyt
+
+inc $8004
+	jsr i2c_stop
+
+inc $8005
+	jsr i2c_end
+
+	cli
+	rts
+	;---------------------------------------
+
+text
+	.asc 13,"INSTALLATION SUCCESSFUL",13, 0	
+
+;#include "ioext-i2c.a65"
+#include "i2clib.a65"
+end
+

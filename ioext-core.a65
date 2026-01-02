@@ -12,16 +12,20 @@
 &IO_CHKIN	jmp do_chkin
 &IO_CLRCH_OUT 	jmp do_clrch_out
 &IO_CLRCH_IN	jmp do_clrch_in
-&IO_OUT		jmp do_out
-&IO_IN		jmp do_in
+&IO_OUT		jmp j_out
+&IO_IN		jmp j_in
 
-do_reset
+do_reset .(
 	jsr do_clrch_out
 	jsr do_clrch_in
 	jmp uart_res
-do_irq
+	.)
+
+do_irq	.(
 	jmp uart_irq
-do_open
+	.)
+
+do_open .(
 	asl
 	tax
 	lda v_open_list+1,x
@@ -31,9 +35,10 @@ do_open
 	sta v
 do_v	jmp (v)
 v_rts2	rts
+	.)
 
 	; close channels
-do_close
+do_close .(
 	asl
 	tax
 	lda v_close_list+1,x
@@ -42,88 +47,110 @@ do_close
 	lda v_close_list,x
 	sta v
 	jmp (v)
+	.)
 	
+	;----------------------------
 	; set the output channel
+	;
+	; assumes that the kernel has
+	; already called clrch
 do_chkout
 	asl
 	tax
 	lda v_ckout_list+1,x
 	beq no_ckout
-	sta v+1
+	sta v_out_c+1
 	lda v_ckout_list,x
-	sta v
+	sta v_out_c
 	phx
 	sec		; set output
-	jsr do_v
+	jsr j_out_c
 	plx
 no_ckout
 	lda v_out_list+1,x
-	beq do_clrch_out
 	sta v_out+1
 	lda v_out_list,x
 	sta v_out
 	rts
 
+	;----------------------------
 	; set the input
-do_chkin
+	; 
+	; assumes that the kernel 
+	; has already called clrch
+do_chkin .(
 	asl
 	tax
 	lda v_ckin_list+1,x
 	beq no_ckin
-	sta v+1
+	sta v_in_c+1
 	lda v_ckin_list,x
-	sta v
+	sta v_in_c
 	phx
 	sec		; set input
-	jsr do_v
+	jsr j_in_c
 	plx
 no_ckin
 	lda v_in_list+1,x
-	beq do_clrch_in
 	sta v_in+1
 	lda v_in_list,x
 	sta v_in
 	rts
+	.)
 
+	;----------------------------
 	; clear output
-do_clrch_out
+do_clrch_out .(
+	clc		; clrch out
+	jsr j_out_c
 	lda #<v_rts
 	sta v_out
 	lda #>v_rts
 	sta v_out+1
 	rts
+	.)
+
 	; clear input
-do_clrch_in
+do_clrch_in .(
+	clc
+	jsr j_in_c	; clrch in
 	lda #<v_rtsc1
 	sta v_in
 	lda #>v_rtsc1
 	sta v_in+1
 	rts
+	.)
 
+	;----------------------------
 v_rtsc1
 	sec
 v_rts
 	rts
 
 	; out vector is set by chkout
-do_out
+j_out
 	jmp (v_out)
+
 	; in vector is set by chkin
-do_in
-	jmp (v_in)
+j_in 	jmp (v_in)
+
+j_in_c 	jmp (v_in_c)
+j_out_c	jmp (v_out_c)
 
 v	.word 0
-v_out	.word 0
-v_in	.word 0
+v_out	.word v_rts	; ouput char
+v_out_c	.word v_rts	; control for output
+v_in	.word v_rts	; input char
+v_in_c	.word v_rts	; control for input
 
 v_ckout_list
 	.word i2c_ckout, 0, 0, 0
 v_ckin_list
 	.word i2c_ckin, 0, 0, 0
 v_out_list
-	.word i2c_send, uart1_tx, uart2_tx, 0
+	.word i2c_send, uart1_tx, uart2_tx, v_rts
 v_in_list
-	.word i2c_recv, uart1_rx, uart2_rx, 0
+	.word i2c_recv, uart1_rx, uart2_rx, v_rts
 v_close_list
 	.word i2c_close, uart1_off, uart2_off, 0
 v_open_list

@@ -5,7 +5,7 @@ IOEXT_FILENAME=512
 
 XAARGS=-w -XMASM -XCA65 -DIOEXT_FILENAME=$(IOEXT_FILENAME) 
 
-SUPPORT=ioromldr4
+SUPPORT=ioromldr4 test1 test2 test3 test4
 
 
 all: ioext-core.bin $(SUPPORT) term
@@ -17,6 +17,9 @@ ioext-core.bin: $(DEPS)
 	xa $(XAARGS) -P $@.lst -o $@ $<
 
 ioromldr4: ioromldr4.a65 ioext-comp4.a65 $(DEPS)
+	xa $(XAARGS) -P $@.lst -o $@ $<
+
+%: %.a65 $(DEPS)
 	xa $(XAARGS) -P $@.lst -o $@ $<
 
 term: term.bas
