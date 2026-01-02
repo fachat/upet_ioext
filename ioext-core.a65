@@ -69,11 +69,8 @@ do_chkout
 no_ckout
 	lda v_out_list+1,x
 	sta v_out+1
-sta $8027
 	lda v_out_list,x
 	sta v_out
-sta $8026
-inc $8005
 	rts
 
 	;----------------------------
@@ -132,7 +129,6 @@ v_rts
 
 	; out vector is set by chkout
 j_out
-inc $8006
 	jmp (v_out)
 
 	; in vector is set by chkin

@@ -136,14 +136,11 @@ chkin_screen
 
 &CHROUT	.(
 	pha
-inc $8007
 	lda $b0
-sta $800a
 	jsr is_ioext
 	bcs out_ioext
 	jmp $f269
 out_ioext
-sta $8008
 	phx
 	phy
 	tay		; translated device number

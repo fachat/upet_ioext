@@ -76,7 +76,6 @@ wait    dex
         .(                      ; wait for SI
         lda #I2C_C_SI
 wait    
-inc $8027
 	bit I2C + I2C_CTRL
         beq wait
         .)
@@ -87,7 +86,6 @@ inc $8027
         cmp #$10                ; repeated START (should not happen)
         bne err08
 w1
-inc $8025
         ;lda #(ADDR << 1)+0     ; r/w bit = 0 -> write
         txa
         asl
@@ -99,7 +97,6 @@ inc $8025
         .(
         lda #I2C_C_SI
 wait    
-inc $8026
 	bit I2C + I2C_CTRL
         beq wait
         .)
@@ -112,11 +109,6 @@ inc $8026
         .)
 
 &i2c_sendbyt .(
-pha
-lda I2C + I2C_STATUS
-sta $8023
-pla
-
         sta I2C + I2C_DATA
 
         lda #I2C_C_ENSIO | I2C_C_AA | I2C_C_CLOCK
@@ -125,7 +117,6 @@ pla
         .(
         lda #I2C_C_SI
 wait    
-inc $8024
 	bit I2C + I2C_CTRL
         beq wait
         .)
@@ -171,7 +162,6 @@ err08   ldx #$08
 err18   ldx #$18
         .byt $2c
 err28   ldx #$28
-inc $8028
         sec
         rts
 
