@@ -31,34 +31,13 @@ eol	.word 0			; BASIC link pointer, 0 means end of code
 	lda #0
 	sta $e801
 
-	; -----------------------------
-	; remove monitor to make room 
-
-	; copy monitor exit code to monitor entry
-	.(
-	ldy #0
-l1	lda $d66b,y
-	sta $d4ac,y
-	iny
-	cpy #7
-	bcc l1
-	.)
-
-	; clear out monitor area
-	; $d4b3 - d7a3
-	.(
-	lda #$ea	; NOP opcode
-	ldy #0
-l1	sta $d4b3,y	; monitor code
-	sta $d5b3,y
-	sta $d7a3-$0100,y
-	iny
-	bne l1
-	.)
-
 	; 16bit index registers
 	rep #%00010000
 	.xl
+
+	; -----------------------------
+	; copy over the code
+	jsr ioext_install4_xl
 
 	; -----------------------------
 	; copy over core
@@ -66,17 +45,6 @@ l1	sta $d4b3,y	; monitor code
 	ldx #end-dosrom
 l1	lda dosrom-1,x
 	sta IOEXT_BASE + (IOEXT_BANK<<15) -1,x
-	dex
-	bne l1
-	.)
-
-	; -----------------------------
-	; copy over companion
-
-	.(
-	ldx #dosrom - MOVE
-l1	lda MOVE-1,x
-	sta IOEXT_COMP-1,x
 	dex
 	bne l1
 	.)
@@ -98,7 +66,7 @@ l1	lda MOVE-1,x
 	; init the serial code
 	lda #$60	; RTS
 	sta origres-1
-	jsr NEWRESET
+;	jsr NEWRESET
 	lda #$4c	; JMP
 	sta origres-1
 

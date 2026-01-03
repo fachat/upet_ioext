@@ -6,6 +6,46 @@
 
 	.xl
 
+ioext_install4_xl .(
+        ; -----------------------------           
+        ; remove monitor to make room             
+                                               
+        ; copy monitor exit code to monitor entry 
+        .(                                        
+        ldy #0                                    
+l1      lda $d66b,y                               
+        sta $d4ac,y                               
+        iny                                       
+        cpy #7                                    
+        bcc l1                                    
+        .)                                        
+
+        ; clear out monitor area              
+        ; $d4b3 - d7a3                        
+        .(                                    
+        lda #$ea        ; NOP opcode          
+        ldy #0                                
+l1      sta $d4b3,y     ; monitor code        
+        iny
+	cpy #$d7a3-$d4b3
+        bcc l1                                
+        .)                                    
+
+        ; -----------------------------             
+        ; copy over companion                       
+                                                    
+        .(                                          
+        ldx #dosrom - MOVE                          
+l1      lda MOVE-1,x                                
+        sta IOEXT_COMP-1,x                          
+        dex                                         
+        bne l1                                      
+        .)                                          
+
+	rts
+	.)
+
+
 ioext_patch4_xl .(
 
 	; -----------------------------
