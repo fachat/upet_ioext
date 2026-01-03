@@ -1,5 +1,6 @@
 
 .(
+	.xs
 
 FN_PTR          =$da
 FN_LEN          =$d1
@@ -314,12 +315,20 @@ open_ioext
 l	cpy FN_LEN
 	beq e
 	lda (FN_PTR),y
-	sta IOEXT_FILENAME+(IOEXT_BANK<<15),x
+	; this is to work around a bug in xa
+	;sta IOEXT_FILENAME+(IOEXT_BANK<<15),x
+	.byt $9f	; STA 
+	.word IOEXT_FILENAME
+	.byt IOEXT_BANK
 	inx
 	iny
 	bne l
 e	lda #0
-	sta IOEXT_FILENAME+(IOEXT_BANK<<15),x
+	; this is to work around a bug in xa
+	;sta IOEXT_FILENAME+(IOEXT_BANK<<15),x
+	.byt $9f	; STA 
+	.word IOEXT_FILENAME
+	.byt IOEXT_BANK
 	.)
 	pla
 	php
