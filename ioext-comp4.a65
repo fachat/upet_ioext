@@ -334,7 +334,7 @@ l	cpy FN_LEN
 	; this is to work around a bug in xa
 	;sta IOEXT_FILENAME+(IOEXT_BANK<<15),x
 	.byt $9f	; STA 
-	.word IOEXT_FILENAME
+	.word IOEXT_FILENAME + ((IOEXT_BANK & 1) << 15);
 	.byt IOEXT_BANK>>1
 	inx
 	iny
@@ -343,7 +343,7 @@ e	lda #0
 	; this is to work around a bug in xa
 	;sta IOEXT_FILENAME+(IOEXT_BANK<<15),x
 	.byt $9f	; STA 
-	.word IOEXT_FILENAME
+	.word IOEXT_FILENAME + ((IOEXT_BANK & 1) << 15);
 	.byt IOEXT_BANK>>1
 	.)
 	pla

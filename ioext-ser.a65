@@ -370,8 +370,6 @@ rx2	.(
 	lda u1_st,x
 	bpl rx2end
 	tya
-inc $8027
-sty $8026
 	; char is in a
 	; x is 0 or UARTDIFF
 	jsr stream_put
@@ -478,7 +476,6 @@ ser_off	jsr rtshi
 
 ; y has index in divisor table
 ser_speed
-sta $8025
 	asl
 	tay
 	lda UARTBASE + UART_LCR,x
@@ -486,10 +483,8 @@ sta $8025
 	sta UARTBASE + UART_LCR,x
   	lda divisor,y
 	sta UARTBASE + UART_DLL,x
-sta $8026
 	lda divisor+1,y
 	sta UARTBASE + UART_DLH,x
-sta $8027
 	lda #0
 	sta UARTBASE + UART_PSD,x
 	lda UARTBASE + UART_LCR,x
