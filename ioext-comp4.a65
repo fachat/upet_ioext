@@ -49,14 +49,18 @@ out_ioext
 	jsr IO_CLRCH_OUT
 	ldx #DEFAULT_BANK
 	stx BANKREG
-	beq chkinput
+	bcc chkinput
+	sty STATUS
+	bra chkinput
 in_ioext
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_CLRCH_IN
 	ldx #DEFAULT_BANK
 	stx BANKREG
-	beq clrch_exit
+	bcc clrch_exit
+	sty STATUS
+	bra clrch_exit
 	.)
 
 
@@ -82,12 +86,19 @@ chkout_screen
 chkout_ioext
 	php
 	sei
+	pha
+	lda $d3		; current secondary
+	and #%10011111	; fix kernel OR'ing with $60
+	tay
+	pla
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_CHKOUT
 	ldx #DEFAULT_BANK
 	stx BANKREG
-	plp
+	bcc ok
+	sty STATUS
+ok	plp
 	lda $d4
 	jmp $f828
 	.)
@@ -110,12 +121,15 @@ chkout_ioext
 chkin_ioext
 	php
 	sei
+	ldy $d3		; current secondary
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_CHKIN
 	ldx #DEFAULT_BANK
 	stx BANKREG
-	plp
+	bcc ok
+	sty STATUS
+ok 	plp
 	lda $d4
 chkin_screen
 	jmp $f7da
@@ -152,7 +166,9 @@ out_ioext
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_OUT
-	ldx #DEFAULT_BANK
+	bcc e
+	sty STATUS
+e 	ldx #DEFAULT_BANK
 	stx BANKREG
 	plp
 	ply
@@ -319,7 +335,7 @@ l	cpy FN_LEN
 	;sta IOEXT_FILENAME+(IOEXT_BANK<<15),x
 	.byt $9f	; STA 
 	.word IOEXT_FILENAME
-	.byt IOEXT_BANK
+	.byt IOEXT_BANK>>1
 	inx
 	iny
 	bne l
@@ -328,17 +344,20 @@ e	lda #0
 	;sta IOEXT_FILENAME+(IOEXT_BANK<<15),x
 	.byt $9f	; STA 
 	.word IOEXT_FILENAME
-	.byt IOEXT_BANK
+	.byt IOEXT_BANK>>1
 	.)
 	pla
 	php
 	sei
+	ldy $d3		; current secondary
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_OPEN
 	ldx #DEFAULT_BANK
 	stx BANKREG
-	plp
+	bcs ok
+	sty STATUS
+ok	plp
 	rts
 	.)
 

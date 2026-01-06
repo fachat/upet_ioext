@@ -29,12 +29,16 @@ do_open .(
 	asl
 	tax
 	lda v_open_list+1,x
+	clc
 	beq v_rts2
 	sta v+1
 	lda v_open_list,x
 	sta v
-do_v	jmp (v)
+	jsr do_v	; preserve C till RTS
+	phx
+	ply		; move status into Y
 v_rts2	rts
+do_v	jmp (v)
 	.)
 
 	; close channels
@@ -58,13 +62,16 @@ do_chkout
 	asl
 	tax
 	lda v_ckout_list+1,x
+	clc
 	beq no_ckout
 	sta v_out_c+1
 	lda v_ckout_list,x
 	sta v_out_c
 	phx
 	sec		; set output
-	jsr j_out_c
+	jsr j_out_c	; preserve C until RTS!
+	phx
+	ply		; move status to Y
 	plx
 no_ckout
 	lda v_out_list+1,x
@@ -82,13 +89,16 @@ do_chkin .(
 	asl
 	tax
 	lda v_ckin_list+1,x
+	clc
 	beq no_ckin
 	sta v_in_c+1
 	lda v_ckin_list,x
 	sta v_in_c
 	phx
 	sec		; set input
-	jsr j_in_c
+	jsr j_in_c	; preserver C until RTS
+	phx
+	ply		; transfer error to Y
 	plx
 no_ckin
 	lda v_in_list+1,x
@@ -102,7 +112,9 @@ no_ckin
 	; clear output
 do_clrch_out .(
 	clc		; clrch out
-	jsr j_out_c
+	jsr j_out_c	; preserve C, X->Y
+	phx
+	ply
 	lda #<v_rts
 	sta v_out
 	lda #>v_rts
@@ -114,6 +126,8 @@ do_clrch_out .(
 do_clrch_in .(
 	clc
 	jsr j_in_c	; clrch in
+	phx
+	ply
 	lda #<v_rtsc1
 	sta v_in
 	lda #>v_rtsc1

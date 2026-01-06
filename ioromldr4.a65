@@ -66,7 +66,7 @@ l1	lda dosrom-1,x
 	; init the serial code
 	lda #$60	; RTS
 	sta origres-1
-;	jsr NEWRESET
+	jsr NEWRESET
 	lda #$4c	; JMP
 	sta origres-1
 

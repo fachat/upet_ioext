@@ -10,46 +10,66 @@
 ;
 	.( 
 
+	; on err, return C=1 and code in X
 &i2c_ckout .(
 	bcs on
 	; send data to target
-	jsr send
+	jsr send	; preserve C and y (error)
+	bra endx
 
 on	lda #0
 	sta len
+	tya
+	and #%01111111
+	sta curdev	; secondary device number is address on I2C
 	clc
+endx	lda #0
+	sta len
 	rts
 	.)
 
+	; send the buffer
+	; returns c=1 on error with code in X
 send 	.(
 	lda len
 	beq nosend
 &sendall
 	ldy #0
 
-	ldx #$10	
+lda curdev
+	ldx curdev
 	jsr i2c_start
 
 l	lda sendbuf,y
 	jsr i2c_sendbyt
+	bcs errout
 
 	iny
 	cpy len
 	bcc l
 
 	jsr i2c_stop
-nosend	clc
+nosend	ldy #0		
+	clc
+	rts
+errout	phx
+	jsr i2c_stop
+	plx
+	sec
 	rts
 	.)
 
+	; on err, set C and return code in X
 &i2c_send .(
 	ldx len
 	sta sendbuf,x
 	inc len
+	clc
 	bne nowrap
 	jsr sendall
-nowrap	clc
-	rts
+	phx
+	ply
+nowrap	rts
 	.)
 
 &i2c_ckin
@@ -71,6 +91,7 @@ nowrap	clc
 
 #include "i2clib.a65"
 
+curdev	.byt 0
 len	.byt 0
 sendbuf	.dsb 256
 

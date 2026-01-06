@@ -1,7 +1,11 @@
 
 
-; receive stream error
-E_SLWM		=<-2	; below low water mark or empty
-E_SHWM		=<-3	; above high water mark or full
+; stream error
+
+E_NODEV		=<-1	; no device found
+E_EMPTY		=<-2	; empty stream
+E_FULL		=<-3	; stream buffer is full
+E_SLWM		=<-4	; below low water mark or empty
+E_SHWM		=<-5	; above high water mark or full
 
 

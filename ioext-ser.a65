@@ -120,10 +120,12 @@ ux_end	iny
 	pla
 	clc
 	rts
-empty	sec
+empty	ldy #E_EMPTY
+	sec
 	rts
 	.)
 
+	;-----------------------------------------
 	; write a char to receive buffer from interrupt
 	; x is/UARTDIFF, a is byte to send
 	; returns c=0 or c=1 (error)
@@ -178,6 +180,7 @@ empty	sec
 	rts
 	.)
 
+	;-----------------------------------------
 	; write a char to send buffer from OS
 	; x is/UARTDIFF, a is byte to send
 	; returns c=0 or c=1 (error)
@@ -206,6 +209,7 @@ ux_end	iny
 	clc
 	rts
 full	pla
+	ldy #E_FULL
 	sec
 	rts
 	.)
@@ -323,7 +327,7 @@ no_u1	bit u2_hw
 no_u2	rts
 
 	; interrupt for one UART
-irq 
+irq
 	lda UARTBASE+UART_IIR,x
 	lsr
 	bcs irqe		; no rx irq
@@ -474,6 +478,7 @@ ser_off	jsr rtshi
 
 ; y has index in divisor table
 ser_speed
+sta $8025
 	asl
 	tay
 	lda UARTBASE + UART_LCR,x
@@ -481,8 +486,10 @@ ser_speed
 	sta UARTBASE + UART_LCR,x
   	lda divisor,y
 	sta UARTBASE + UART_DLL,x
+sta $8026
 	lda divisor+1,y
 	sta UARTBASE + UART_DLH,x
+sta $8027
 	lda #0
 	sta UARTBASE + UART_PSD,x
 	lda UARTBASE + UART_LCR,x
