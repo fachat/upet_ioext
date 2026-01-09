@@ -300,7 +300,6 @@ res
 	lda UARTBASE+UART_MCR,x
 	and #%00001100			; keep OUT1, OUT2 values
 	sta UARTBASE+UART_MCR,x		; reset DTR, RTS
-
         sec
         rts
 

@@ -4,6 +4,7 @@
 ; range starting from 0 up to 3
 
 	.(
+	; jump table for companion
 &IO_RESET	jmp do_reset
 &IO_IRQ		jmp do_irq
 &IO_OPEN	jmp do_open
@@ -14,7 +15,87 @@
 &IO_CLRCH_IN	jmp do_clrch_in
 &IO_OUT		jmp j_out
 &IO_IN		jmp j_in
+	; jump table for boot code
+&BOOT_ENABLE	jmp boot_en
+&BOOT_GET	jmp boot_get
+&BOOT_PUT	jmp boot_put
 
+	;--------------------------------
+	; boot code.
+	; 
+	; when BOOT_ENABLE is called with C=1
+	; then enable rx from both RS232 channels
+	; When called with C=0 disable it
+	;
+	; when BOOT_ENABLE is set, then
+	; BOOT_GET and BOOT_PUT can be used
+	; to receive and send data
+
+	.(
+
+&boot_en .(
+	ror boot_st
+
+	bit boot_st
+	bmi on
+	; switch off
+	jmp uart_res
+
+on	lda #15		; 19200 baud
+	sta IOEXT_FILENAME
+	lda #0
+	sta IOEXT_FILENAME+1
+	jsr uart1_open
+	jsr uart2_open
+	lda #0
+	sta actdev	; not decided yet
+	rts
+	.)
+
+&boot_get .(
+	bit boot_st
+	bpl noboot
+	ldx actdev
+	beq both
+
+	dex
+	bne secnd
+
+	jmp uart1_rx
+secnd	jmp uart2_rx
+
+both	
+	jsr uart1_rx
+	bcc ok1
+	jsr uart2_rx
+	bcs ret
+	ldx #2
+	.byt $2c
+ok1	ldx #1
+	stx actdev
+ret	rts
+	.)
+
+&boot_put .(
+	ldx actdev
+	beq noboot
+	dex
+	beq first
+	jmp uart1_tx
+first	jmp uart2_tx
+	.)
+
+noboot	sec
+	ldy #E_NODEV
+	rts
+
+
+actdev	.byt 0	
+boot_st	.byt 0	
+	.)
+
+	;--------------------------------
+	; standard OS calls
 do_reset .(
 	jsr do_clrch_out
 	jsr do_clrch_in
