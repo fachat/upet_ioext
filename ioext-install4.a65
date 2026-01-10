@@ -143,6 +143,24 @@ addr3	=*+1
         plp
 	rts
 	.)
-
 	.)
+	
+	; -----------------------------
+	; patch in that the boot keyboard is
+	; always sent to the kernel, and 
+	; output is always also sent to the 
+	; serial output
+ioext_patch4_serkbd_xl .(
+
+	;  F26D		PLA
+	;  F26E		JMP $E202	; -	Output to Screen
+	;  F271	iF271	BMI $F277
+	ldx #NEWSCR
+	ldy $f26f
+	stx $f26f
+	sty SCRRET
+	rts
+	.)
+
+
 

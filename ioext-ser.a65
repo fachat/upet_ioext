@@ -283,7 +283,7 @@ res
 
 	lda #%10000000
 	sta UARTBASE+UART_LCR,x
-	ldy #14*2			; 9600 BAUD
+	ldy #15*2			; 19200 BAUD
 	lda divisor,y
 	sta UARTBASE+UART_DLL,x
 	lda divisor+1,y

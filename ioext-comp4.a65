@@ -384,6 +384,36 @@ ok	plp
 	.)
 
 ;--------------------------------------------------
+; boot keyboard support
+; 
+; when the boot selection is done via a serial
+; interface the screen output is automatically
+; mirrored on that serial, and input from that
+; serial is taken as if it were from the
+; keyboard
+
+	; injected at F26E:
+        ;  F26D         PLA                                      
+        ;  F26E         JMP $E202       ; -     Output to Screen 
+        ;  F271 iF271   BMI $F277                                
+&NEWSCR	pha
+	phx
+	phy
+	php
+	sei
+        ldx #IOEXT_BANK
+        stx BANKREG
+        jsr BOOT_PUT
+        ldx #DEFAULT_BANK
+        stx BANKREG
+	plp
+	ply
+	plx
+	pla
+&SCRRET	=*+1
+	jmp $e202
+
+;--------------------------------------------------
 ; filter device number for IOEXT devices
 ;
 ; Input:

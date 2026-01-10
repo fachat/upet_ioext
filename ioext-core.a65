@@ -79,10 +79,18 @@ ret	rts
 &boot_put .(
 	ldx actdev
 	beq noboot
+	; simple petscii to ascii conversion
+	cmp #13
+	bne conv
+	jsr conv
+	lda #10
+	ldx actdev
+conv	
 	dex
 	beq first
+	jmp uart2_tx
+first
 	jmp uart1_tx
-first	jmp uart2_tx
 	.)
 
 noboot	sec
@@ -90,8 +98,9 @@ noboot	sec
 	rts
 
 
-actdev	.byt 0	
-boot_st	.byt 0	
+&actdev	.byt 0	
+&boot_st
+	.byt 0	
 	.)
 
 	;--------------------------------
@@ -99,7 +108,14 @@ boot_st	.byt 0
 do_reset .(
 	jsr do_clrch_out
 	jsr do_clrch_in
-	jmp uart_res
+	jsr uart_res
+	ldx actdev
+	beq no_act
+	dex
+	beq first
+	jmp uart2_on
+first	jmp uart1_on
+no_act	rts
 	.)
 
 do_irq	.(
