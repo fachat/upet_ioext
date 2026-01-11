@@ -392,13 +392,32 @@ ok	plp
 ; serial is taken as if it were from the
 ; keyboard
 
-	; injected at F26E:
-        ;  F26D         PLA                                      
-        ;  F26E         JMP $E202       ; -     Output to Screen 
-        ;  F271 iF271   BMI $F277                                
+; this is injected into the editor
+; as too many places exist where the editor
+; is called directly at e202 instead of going
+; over the jump table e009 (or even ffd2).
+;
+; -	Output to Screen
+;
+; E202	iE202	PHA
+; E203		STA $D9		; Current Character to Print
+; E205		TXA
+; E206		PHA
+; E207		TYA
+; E208		PHA
+;
+; Note that out of the 12 editor ROMs currently
+; supported, all have the same code in e202-e208
+; differences only start at e209
+; In later versions, at e209 an indirect jump
+; over an output vector is inserted, but only
+; in 80 col ROMs, so we cannot use this.
+;
 &NEWSCR	pha
+	sta $d9
 	phx
 	phy
+
 	php
 	sei
         ldx #IOEXT_BANK
@@ -407,11 +426,7 @@ ok	plp
         ldx #DEFAULT_BANK
         stx BANKREG
 	plp
-	ply
-	plx
-	pla
-&SCRRET	=*+1
-	jmp $e202
+	jmp $e209
 
 ;--------------------------------------------------
 ; filter device number for IOEXT devices

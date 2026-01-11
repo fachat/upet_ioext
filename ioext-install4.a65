@@ -150,15 +150,24 @@ addr3	=*+1
 	; always sent to the kernel, and 
 	; output is always also sent to the 
 	; serial output
+
+; insert call to companion at e202
+;
+; -	Output to Screen
+;
+; E202	iE202	PHA
+; E203		STA $D9		; Current Character to Print
+; E205		TXA
+; E206		PHA
+; E207		TYA
+; E208		PHA
+;
 ioext_patch4_serkbd_xl .(
 
-	;  F26D		PLA
-	;  F26E		JMP $E202	; -	Output to Screen
-	;  F271	iF271	BMI $F277
+	lda #$4c	; JMP opcode
+	sta $e202
 	ldx #NEWSCR
-	ldy $f26f
-	stx $f26f
-	sty SCRRET
+	stx $e203
 	rts
 	.)
 
