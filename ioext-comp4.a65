@@ -379,20 +379,15 @@ ok	plp
 	jsr BOOT_GET
 	ldx #DEFAULT_BANK
 	stx BANKREG
-nop:nop:nop
-nop:nop:nop
-nop:nop:nop
-nop:nop:nop
-nop:nop:nop
-;	bcs origirq	; no key received
-;	; store received key in keyboard buffer
-;	ldx $9e
-;	cpx #5		; save value
-;	bcs origirq
-;	sta $026f,x
-;	inc $9e
+	bcs irqret	; no key received
+	; store received key in keyboard buffer
+	ldx $9e
+	cpx #5		; save value
+	bcs irqret
+	sta $026f,x
+	inc $9e
 &&origirq	=*+1
-	jmp $ffff
+irqret	jmp $ffff
 	.)
 
 &NEWRESET .(

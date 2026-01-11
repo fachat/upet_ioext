@@ -49,6 +49,7 @@ on	lda #15		; 19200 baud
 	jsr uart2_open
 	lda #0
 	sta actdev	; not decided yet
+	sta escstat
 	rts
 	.)
 
@@ -61,17 +62,18 @@ on	lda #15		; 19200 baud
 	dex
 	bne secnd
 
-	jmp uart1_rx
-secnd	jmp uart2_rx
-
+	jsr uart1_rx
+	bcc ok1
+	bcs ret
 both	
 	jsr uart1_rx
 	bcc ok1
-	jsr uart2_rx
+secnd	jsr uart2_rx
 	bcs ret
 	ldx #2
 	.byt $2c
 ok1	ldx #1
+	jsr ascii2petscii
 	stx actdev
 ret	rts
 	.)
@@ -122,17 +124,45 @@ ok	and #$7f
 	rts
 	.)
 
+	; strangely the esc code that precedes the cursor keys
+	; seems to change from time to time
 ascii2petscii .(
+;	bit escstat
+;	bmi isesc
+;	cmp #125
+;	beq esc
+	cmp #8
+	beq del
 	cmp #64
 	bcc ok
 	cmp #96
 	bcc add
-	adc #128-32-2
+	adc #128-32-1
 add	adc #128
-ok	rts
+ok	clc
+	rts
+del	lda #20
+	clc
+	rts
+;esc	sec
+;clresc	ror escstat
+;	sec
+;	rts
+;isesc	cmp #5
+;	bcc clresc
+;	tay
+;	lda esccodes,y
+;	clc
+;	ror escstat
+;	clc
+;	rts
+;
+;esccodes
+;	.byt 0, 17+128, 17, 29, 29+128
 	.)
 
 
+escstat	.byt 0
 &actdev	.byt 0	
 &boot_st
 	.byt 0	
