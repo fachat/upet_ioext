@@ -159,6 +159,7 @@ full	pla
 
 	; get a char from send buffer in interrupt
 	; x is 0/UARTDIFF, returns char in A when C=0; C=1 -> no char
+	; clobbers y
 stream_get .(
 	lda u1_txrp,x
 	cmp u1_txwp,x
@@ -355,7 +356,7 @@ irqe
 	; even if previous THR empty ints have been
 	; cleared already
 	lda UARTBASE+UART_LSR,x
-	and #$40
+	and #$40	; THR empty
 	beq nbyt
 	jsr tx2
 nbyt
@@ -389,8 +390,9 @@ rx2end	rts
 
 tx2 	.(
 	lda u1_st,x
-	and #$40
-        beq txrt		; reading IIR should clear this line
+	and #$40		; tx active?
+        beq txrt		; no, return
+				; reading IIR should clear this line
 	lda UARTBASE + UART_MSR,x
 	and #%00110000
 	cmp #%00110000		; cts or dsr inactive
@@ -398,7 +400,9 @@ tx2 	.(
 
 	ldy #15			
 txloop
+	phy
         jsr stream_get
+	ply
         bcs test2
         sta UARTBASE + UART_RXTX,x
 	dey
