@@ -363,12 +363,34 @@ ok	plp
 
 ;--------------------------------------------------
 
+; save a char in the keyboard buffer
+; E563	iE563	LDX $9E		; No. of Chars. in Keyboard Buffer (Queue)
+; E565		CPX $E3		; 4.80: Size of Keyboard Buffer
+; E567		BCS $E56F
+; E569		STA $026F,X
+; E56C		INX
+; E56D		STX $9E		; No. of Chars. in Keyboard Buffer (Queue)
+; E56F	iE56F	RTS
+
 &NEWIRQ	.(
 	lda #IOEXT_BANK
 	sta BANKREG
 	jsr IO_IRQ
-	lda #DEFAULT_BANK
-	sta BANKREG
+	jsr BOOT_GET
+	ldx #DEFAULT_BANK
+	stx BANKREG
+nop:nop:nop
+nop:nop:nop
+nop:nop:nop
+nop:nop:nop
+nop:nop:nop
+;	bcs origirq	; no key received
+;	; store received key in keyboard buffer
+;	ldx $9e
+;	cpx #5		; save value
+;	bcs origirq
+;	sta $026f,x
+;	inc $9e
 &&origirq	=*+1
 	jmp $ffff
 	.)

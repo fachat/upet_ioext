@@ -85,17 +85,52 @@ ret	rts
 	jsr conv
 	lda #10
 	ldx actdev
-conv	
+
+conv	jsr petscii2ascii
+
+retry	pha
 	dex
 	beq first
-	jmp uart2_tx
+	jsr uart2_tx
+	bcc done
+	bcs check
 first
-	jmp uart1_tx
+	jsr uart1_tx
+	bcc done
+
+check	cpy #E_FULL
+	bne done
+	pla
+	ldx actdev
+	bra retry
+
+done	pla
+	rts
 	.)
 
 noboot	sec
 	ldy #E_NODEV
 	rts
+
+petscii2ascii .(
+	cmp #64
+	bcc ok
+	cmp #96
+	bcs ok
+	adc #32
+ok	and #$7f
+	rts
+	.)
+
+ascii2petscii .(
+	cmp #64
+	bcc ok
+	cmp #96
+	bcc add
+	adc #128-32-2
+add	adc #128
+ok	rts
+	.)
 
 
 &actdev	.byt 0	
