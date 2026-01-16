@@ -40,15 +40,17 @@
 	bmi on
 	; switch off
 	jmp uart_res
-
-on	lda #15		; 19200 baud
+on	
+	lda actdev
+	bne :+
+	lda #15		; 19200 baud
 	sta IOEXT_FILENAME
 	lda #0
 	sta IOEXT_FILENAME+1
 	jsr uart1_open
 	jsr uart2_open
-	lda #0
-	sta actdev	; not decided yet
+:	lda #0
+	;sta actdev	; not decided yet
 	sta escstat
 	rts
 	.)
