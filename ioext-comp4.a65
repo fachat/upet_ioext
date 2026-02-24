@@ -1,5 +1,8 @@
 
 .(
+
+#include "ioext-stream.i65"
+
 	.xs
 
 FN_PTR          =$da
@@ -158,19 +161,29 @@ chkin_screen
 out_ioext
 	phx
 	phy
-	tay		; translated device number
-	tsx
-	lda $0103,x	; AC output value
+	pha
 	php
-	sei
+loop	sei
+	;tay		; translated device number
+	tsx
+	ldy $0102,x	; translated dev number
+	lda $0105,x	; AC output value
 	ldx #IOEXT_BANK
 	stx BANKREG
 	jsr IO_OUT
-	bcc e
-	sty STATUS
+	bcc e		; ok, end
+	cpy #E_FULL
+	bne err
+	ldx #DEFAULT_BANK
+	stx BANKREG
+	cli		; allow irq processing (in default bank)
+	bra loop
+
+err	sty STATUS
 e 	ldx #DEFAULT_BANK
 	stx BANKREG
 	plp
+	pla
 	ply
 	plx
 	pla

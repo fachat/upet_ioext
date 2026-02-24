@@ -192,24 +192,29 @@ empty	sec
 	ldx #UARTDIFF
 stream_send .(
 	pha
-	lda u1_txwp,x
-	tay
-	clc
-	adc #1
+	ldy u1_txwp,x
+	iny
+	tya
 	cmp u1_txrp,x
 	beq full
+	dey
 	pla
 	cpx #0
 	bne u2_put
 	sta u1_txbuf,y
-	bne ux_end
+	beq ux_end
 u2_put	sta u2_txbuf,y
 ux_end	iny
 	tya
 	sta u1_txwp,x
 	clc
 	rts
-full	pla
+
+full	php
+	sei
+	jsr irqsend
+	plp
+	pla
 	ldy #E_FULL
 	sec
 	rts
@@ -328,9 +333,9 @@ no_u2	rts
 
 	; interrupt for one UART
 irq
-	lda UARTBASE+UART_IIR,x
+	lda UARTBASE + UART_IIR,x
 	lsr
-	bcs irqe		; no rx irq
+	bcs irqsend		; no rx irq
 
 	;-----------------------------------------------
 
@@ -351,14 +356,14 @@ rxl	lda UARTBASE + UART_LSR,x
 	; tx
 tx	; is done in irq end handling	
 
-irqe
+&irqsend
 	; check if we have data to send,
 	; even if previous THR empty ints have been
 	; cleared already
-	lda UARTBASE+UART_LSR,x
+	lda UARTBASE + UART_LSR,x
 	and #$40	; THR empty
 	beq nbyt
-	jsr tx2
+	jmp tx2
 nbyt
 	rts
 
