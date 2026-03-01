@@ -133,15 +133,14 @@ stream_put .(
 	pha
 	lda u1_rxwp,x
 	tay
-	clc
-	adc #1
+	inc
 	cmp u1_rxrp,x
 	beq full
 	pla
 	cpx #0
 	bne u2_put
 	sta u1_rxbuf,y
-	beq ux_end
+	bra ux_end
 u2_put	sta u2_rxbuf,y
 ux_end	iny
 	tya
@@ -351,7 +350,7 @@ rxl	lda UARTBASE + UART_LSR,x
 	; received a byte (or more)
 	jsr rx2
 	; check again
-	jmp rxl
+	bra rxl
 
 	; tx
 tx	; is done in irq end handling	
@@ -379,7 +378,6 @@ rx2	.(
 	; x is 0 or UARTDIFF
 	jsr stream_put
 	bcc rx2end
-
 tstwater  
         cmp #E_SHWM
         bne twl
