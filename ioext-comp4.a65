@@ -463,10 +463,10 @@ irqret	jmp $ffff
 ;
 ; Input:
 ;	2	Serial1 - replaces Tape2
-;	24	(I2C)
-;	25	Tape2 (mapped to 2 on original)
-;	26	Serial2
-;	27	(SPI)
+;	16	(I2C)
+;	17	Tape2 (mapped to 2 on original)
+;	18	Serial2
+;	19	(SPI)
 ; Output:
 ;	C=1 ->	is IOEXT, AC is
 ;	0	(I2C)
